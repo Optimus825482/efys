@@ -16,8 +16,8 @@ timeout = int(os.getenv('GUNICORN_TIMEOUT', 120))
 keepalive = 5
 
 # Logging
-accesslog = os.getenv('LOG_FILE', '/app/logs/access.log') if os.getenv('LOG_FILE') else '-'
-errorlog = os.getenv('LOG_FILE', '/app/logs/error.log') if os.getenv('LOG_FILE') else '-'
+accesslog = '-'  # stdout
+errorlog = '-'   # stderr
 loglevel = os.getenv('LOG_LEVEL', 'info')
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
@@ -26,7 +26,7 @@ proc_name = 'efys'
 
 # Server mechanics
 daemon = False
-pidfile = '/var/run/efys/gunicorn.pid'
+pidfile = None  # Disable pidfile for containerized deployment
 user = None
 group = None
 tmp_upload_dir = None
