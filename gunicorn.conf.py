@@ -3,21 +3,21 @@ import multiprocessing
 import os
 
 # Server socket
-bind = os.getenv('BIND', '127.0.0.1:8000')
+bind = os.getenv('GUNICORN_BIND', '0.0.0.0:3002')
 backlog = 2048
 
 # Worker processes
-workers = int(os.getenv('WORKERS', multiprocessing.cpu_count() * 2 + 1))
+workers = int(os.getenv('GUNICORN_WORKERS', multiprocessing.cpu_count() * 2 + 1))
 worker_class = os.getenv('WORKER_CLASS', 'sync')
 worker_connections = 1000
 max_requests = 1000
 max_requests_jitter = 50
-timeout = int(os.getenv('TIMEOUT', 120))
+timeout = int(os.getenv('GUNICORN_TIMEOUT', 120))
 keepalive = 5
 
 # Logging
-accesslog = '/var/log/efys/access.log'
-errorlog = '/var/log/efys/error.log'
+accesslog = os.getenv('LOG_FILE', '/app/logs/access.log') if os.getenv('LOG_FILE') else '-'
+errorlog = os.getenv('LOG_FILE', '/app/logs/error.log') if os.getenv('LOG_FILE') else '-'
 loglevel = os.getenv('LOG_LEVEL', 'info')
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
