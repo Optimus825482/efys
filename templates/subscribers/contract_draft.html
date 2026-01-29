@@ -1,0 +1,142 @@
+{% extends 'base.html' %} {% block title %}Sözleşme Taslağı{% endblock %} {% block
+page_title %}Sözleşme Taslağı{% endblock %} {% set breadcrumb = [{'name':
+'Aboneler', 'url': url_for('subscribers.index')}, {'name': 'Sözleşmeler', 'url':
+url_for('subscribers.contracts')}, {'name': 'Taslak'}] %} {% block content %}
+<div class="card mb-4">
+    <div class="card-header"
+        style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <h3 class="card-title">Abone Sözleşme Taslağı</h3>
+        <div style="display:flex;gap:8px;">
+            <a href="{{ url_for('subscribers.contracts') }}" class="btn btn-secondary">Geri</a>
+            <button class="btn btn-primary" onclick="window.print()">Yazdır</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <h4 style="font-weight:600;margin-bottom:8px;">Abone Bilgileri</h4>
+                <div class="detail-row">
+                    <div class="label">Abone Kodu</div>
+                    <div class="value">{{ subscriber.subscriber_code }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Unvan</div>
+                    <div class="value">{{ subscriber.name }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Sektör</div>
+                    <div class="value">{{ subscriber.sector or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Abone Tipi</div>
+                    <div class="value">{{ subscriber.subscriber_type or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Durum</div>
+                    <div class="value">{{ subscriber.status }}</div>
+                </div>
+            </div>
+            <div>
+                <h4 style="font-weight:600;margin-bottom:8px;">Vergi & Adres</h4>
+                <div class="detail-row">
+                    <div class="label">Vergi No</div>
+                    <div class="value">{{ subscriber.tax_no or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Vergi Dairesi</div>
+                    <div class="value">{{ subscriber.tax_office or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Adres</div>
+                    <div class="value">{{ subscriber.address or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Ada / Parsel</div>
+                    <div class="value">{{ subscriber.ada or '-' }} / {{ subscriber.parsel or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Alan</div>
+                    <div class="value">{{ subscriber.area_m2 or '-' }} m²</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4" style="margin-top:16px;">
+            <div>
+                <h4 style="font-weight:600;margin-bottom:8px;">Sözleşme Bilgileri</h4>
+                <div class="detail-row">
+                    <div class="label">Tarife</div>
+                    <div class="value">{{ subscriber.tariff_name or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Sözleşme Gücü</div>
+                    <div class="value">{{ subscriber.contract_demand or '-' }} kW</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Sözleşme Başlangıç</div>
+                    <div class="value">-</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Sözleşme Bitiş</div>
+                    <div class="value">-</div>
+                </div>
+            </div>
+            <div>
+                <h4 style="font-weight:600;margin-bottom:8px;">Sayaç Bilgileri</h4>
+                <div class="detail-row">
+                    <div class="label">Sayaç No</div>
+                    <div class="value">{{ subscriber.meter_no or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Marka</div>
+                    <div class="value">{{ subscriber.meter_brand or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Model</div>
+                    <div class="value">{{ subscriber.meter_model or '-' }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="label">Durum</div>
+                    <div class="value">{{ subscriber.meter_status or '-' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:16px;">
+            <h4 style="font-weight:600;margin-bottom:8px;">Sözleşme Metni (Taslak)</h4>
+            <div
+                style="padding:16px;border:1px dashed var(--color-border);border-radius:8px;line-height:1.6;color:var(--color-text-secondary);">
+                İşbu sözleşme, {{ today.strftime('%d.%m.%Y') }} tarihinde aşağıda bilgileri yer alan abone ile Gönen OSB
+                Enerji Faturalandırma Sistemi arasında düzenlenmiştir.
+                Elektrik enerjisinin temini, ölçümü, faturalandırılması ve ilgili tüm yükümlülükler yürürlükteki mevzuat
+                hükümlerine tabidir.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--color-border);
+    }
+
+    .detail-row:last-child {
+        border-bottom: 0;
+    }
+
+    .detail-row .label {
+        color: var(--color-text-secondary);
+        font-size: 0.8rem;
+    }
+
+    .detail-row .value {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        text-align: right;
+    }
+</style>
+{% endblock %}

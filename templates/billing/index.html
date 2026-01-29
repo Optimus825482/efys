@@ -1,0 +1,169 @@
+{% extends 'base.html' %} {% block title %}Faturalama{% endblock %} {% block
+page_title %}Faturalama{% endblock %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <!-- Toplam Fatura -->
+  <div class="kpi-card">
+    <div class="kpi-card-icon primary">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.total_invoices or 0 }}</div>
+    <div class="kpi-card-label">Toplam Fatura</div>
+  </div>
+
+  <!-- Fatura Dönemleri -->
+  <div class="kpi-card">
+    <div class="kpi-card-icon success">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.billing_periods or 0 }}</div>
+    <div class="kpi-card-label">Fatura Dönemi</div>
+  </div>
+
+  <!-- Toplam Abone -->
+  <div class="kpi-card">
+    <div class="kpi-card-icon warning">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.total_subscribers or 0 }}</div>
+    <div class="kpi-card-label">Toplam Abone</div>
+  </div>
+
+  <!-- Aktif Sayaç -->
+  <div class="kpi-card">
+    <div class="kpi-card-icon danger">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="8" width="18" height="12" rx="2" />
+        <path d="M7 16l2-4 4 4 2-4" />
+        <line x1="12" y1="2" x2="12" y2="8" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.active_meters or 0 }}</div>
+    <div class="kpi-card-label">Aktif Sayaç</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+  <a href="{{ url_for('billing.tariff') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="display: flex; align-items: center; gap: 16px">
+      <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-primary-100);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-primary);
+        ">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+        </svg>
+      </div>
+      <div>
+        <div style="font-weight: 600; color: var(--color-text-primary)">
+          Tarife Yönetimi
+        </div>
+        <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+          T1, T2, T3 birim fiyatlarını düzenle
+        </div>
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('billing.period') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="display: flex; align-items: center; gap: 16px">
+      <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-success-bg);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-success);
+        ">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      </div>
+      <div>
+        <div style="font-weight: 600; color: var(--color-text-primary)">
+          Dönem Yönetimi
+        </div>
+        <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+          Fatura dönemlerini aç/kapat
+        </div>
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('billing.calculate') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="display: flex; align-items: center; gap: 16px">
+      <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-warning-bg);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-warning);
+        ">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+          <line x1="8" y1="6" x2="16" y2="6" />
+          <line x1="16" y1="14" x2="16" y2="18" />
+          <line x1="8" y1="10" x2="8" y2="10.01" />
+          <line x1="12" y1="10" x2="12" y2="10.01" />
+        </svg>
+      </div>
+      <div>
+        <div style="font-weight: 600; color: var(--color-text-primary)">
+          Fatura Hesapla
+        </div>
+        <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+          Tek abone için fatura oluştur
+        </div>
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('billing.bulk_invoice') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="display: flex; align-items: center; gap: 16px">
+      <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-danger-bg);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-danger);
+        ">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      </div>
+      <div>
+        <div style="font-weight: 600; color: var(--color-text-primary)">
+          Toplu Fatura Kes
+        </div>
+        <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+          Tüm abonelere toplu fatura
+        </div>
+      </div>
+    </div>
+  </a>
+</div>
+{% endblock %}

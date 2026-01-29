@@ -1,0 +1,354 @@
+{% extends 'base.html' %} {% block title %}Endeks Raporu{% endblock %} {% block
+page_title %}Endeks Raporu{% endblock %} {% block content %}
+<!-- Stats Cards -->
+{% if stats %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-icon primary">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <line x1="9" y1="9" x2="15" y2="9" />
+        <line x1="9" y1="15" x2="15" y2="15" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.total }}</div>
+    <div class="kpi-card-label">Toplam Sayaç</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon success">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.online }}</div>
+    <div class="kpi-card-label">Online</div>
+    <div class="kpi-card-change positive">Aktif</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon danger">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="15" y1="9" x2="9" y2="15" />
+        <line x1="9" y1="9" x2="15" y2="15" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.offline }}</div>
+    <div class="kpi-card-label">Offline</div>
+    <div class="kpi-card-change negative">Pasif</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon info">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.access_rate }}%</div>
+    <div class="kpi-card-label">Erişim Oranı</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="grid grid-cols-5 gap-4">
+      <div>
+        <label class="form-label">Durum</label>
+        <select id="statusFilter" class="form-select">
+          <option value="">Tümü</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Cos φ Durumu</label>
+        <select id="cosPhiFilter" class="form-select">
+          <option value="">Tümü</option>
+          <option value="good">İyi (≥0.90)</option>
+          <option value="warning">Uyarı (0.85-0.90)</option>
+          <option value="critical">Kritik (<0.85)</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Arama</label>
+        <input
+          type="text"
+          id="searchInput"
+          class="form-input"
+          placeholder="Sayaç veya abone ara..."
+        />
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 8px">
+        <button class="btn btn-primary" onclick="applyFilters()">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          Filtrele
+        </button>
+        <button class="btn btn-secondary" onclick="resetFilters()">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Index Table -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Son Sayaç Endeksleri</h3>
+    <div style="display: flex; gap: 8px">
+      <button class="btn btn-success btn-sm" onclick="exportToExcel()">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+        Excel
+      </button>
+      <button class="btn btn-danger btn-sm" onclick="exportToPDF()">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        PDF
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="refreshData()">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+        </svg>
+        Yenile
+      </button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="indexGrid" style="height: 600px; width: 100%"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // AG-Grid Column Definitions
+  const columnDefs = [
+      {
+          headerName: 'Sayaç No',
+          field: 'meter_no',
+          width: 150,
+          pinned: 'left',
+          cellStyle: { fontWeight: '500' }
+      },
+      {
+          headerName: 'Abone',
+          field: 'subscriber_name',
+          width: 250
+      },
+      {
+          headerName: 'T1 Endeks (kWh)',
+          field: 't1_index',
+          width: 150,
+          valueFormatter: params => params.value ? params.value.toLocaleString('tr-TR', {maximumFractionDigits: 0}) : '0',
+          type: 'numericColumn'
+      },
+      {
+          headerName: 'T2 Endeks (kWh)',
+          field: 't2_index',
+          width: 150,
+          valueFormatter: params => params.value ? params.value.toLocaleString('tr-TR', {maximumFractionDigits: 0}) : '0',
+          type: 'numericColumn'
+      },
+      {
+          headerName: 'T3 Endeks (kWh)',
+          field: 't3_index',
+          width: 150,
+          valueFormatter: params => params.value ? params.value.toLocaleString('tr-TR', {maximumFractionDigits: 0}) : '0',
+          type: 'numericColumn'
+      },
+      {
+          headerName: 'Reaktif (kVArh)',
+          field: 'reactive',
+          width: 150,
+          valueFormatter: params => params.value ? params.value.toLocaleString('tr-TR', {maximumFractionDigits: 0}) : '0',
+          type: 'numericColumn'
+      },
+      {
+          headerName: 'Cos φ',
+          field: 'cos_phi',
+          width: 120,
+          valueFormatter: params => params.value ? params.value.toFixed(3) : '-',
+          cellStyle: params => {
+              if (!params.value) return {};
+              if (params.value >= 0.90) return { color: '#10B981', fontWeight: '600' };
+              if (params.value >= 0.85) return { color: '#F59E0B', fontWeight: '600' };
+              return { color: '#EF4444', fontWeight: '600' };
+          }
+      },
+      {
+          headerName: 'Durum',
+          field: 'status',
+          width: 120,
+          cellRenderer: params => {
+              return params.value === 'online'
+                  ? '<span class="badge badge-success">Online</span>'
+                  : '<span class="badge badge-danger">Offline</span>';
+          }
+      },
+      {
+          headerName: 'Son Okuma',
+          field: 'reading_time',
+          width: 180,
+          valueFormatter: params => {
+              if (!params.value) return '-';
+              return new Date(params.value).toLocaleString('tr-TR');
+          }
+      }
+  ];
+
+  // Grid Options
+  const gridOptions = {
+      columnDefs: columnDefs,
+      rowData: {{ indexes | tojson | safe }},
+      defaultColDef: {
+          sortable: true,
+          filter: true,
+          resizable: true
+      },
+      pagination: true,
+      paginationPageSize: 50,
+      animateRows: true,
+      onGridReady: params => {
+          params.api.sizeColumnsToFit();
+      }
+  };
+
+  // Initialize Grid
+  document.addEventListener('DOMContentLoaded', () => {
+      const gridDiv = document.querySelector('#indexGrid');
+      new agGrid.Grid(gridDiv, gridOptions);
+  });
+
+  // Functions
+  function applyFilters() {
+      const status = document.getElementById('statusFilter').value;
+      const cosPhiFilter = document.getElementById('cosPhiFilter').value;
+      const search = document.getElementById('searchInput').value;
+
+      const filterModel = {};
+
+      if (status) {
+          filterModel.status = { type: 'equals', filter: status };
+      }
+
+      if (cosPhiFilter) {
+          if (cosPhiFilter === 'good') {
+              filterModel.cos_phi = { type: 'greaterThanOrEqual', filter: 0.90 };
+          } else if (cosPhiFilter === 'warning') {
+              filterModel.cos_phi = {
+                  type: 'inRange',
+                  filter: 0.85,
+                  filterTo: 0.90
+              };
+          } else if (cosPhiFilter === 'critical') {
+              filterModel.cos_phi = { type: 'lessThan', filter: 0.85 };
+          }
+      }
+
+      gridOptions.api.setFilterModel(filterModel);
+
+      if (search) {
+          gridOptions.api.setQuickFilter(search);
+      }
+  }
+
+  function resetFilters() {
+      document.getElementById('statusFilter').value = '';
+      document.getElementById('cosPhiFilter').value = '';
+      document.getElementById('searchInput').value = '';
+      gridOptions.api.setFilterModel(null);
+      gridOptions.api.setQuickFilter('');
+  }
+
+  function refreshData() {
+      window.location.reload();
+  }
+
+  function exportToExcel() {
+      window.location.href = '/reports/export/excel/index';
+  }
+
+  function exportToPDF() {
+      window.location.href = '/reports/export/pdf/index';
+  }
+</script>
+{% endblock %}

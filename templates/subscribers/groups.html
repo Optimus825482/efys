@@ -1,0 +1,78 @@
+{% extends 'base.html' %} {% block title %}Gruplandırma{% endblock %} {% block
+page_title %}Abone Grupları{% endblock %} {% set breadcrumb = [{'name':
+'Aboneler', 'url': url_for('subscribers.index')}, {'name': 'Gruplar'}] %} {%
+block content %}
+<div class="flex justify-between items-center mb-4">
+  <div>
+    <h2 style="color: var(--color-text-primary); font-weight: 600">
+      Abone Grupları
+    </h2>
+  </div>
+  <button class="btn btn-primary">Yeni Grup</button>
+</div>
+<div class="grid grid-cols-3 gap-4">
+  <div class="card">
+    <div class="card-body">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        "
+      >
+        <span style="font-weight: 600; color: var(--color-text-primary)"
+          >Sanayi</span
+        >
+        <span class="badge badge-primary">523 abone</span>
+      </div>
+      <p style="color: var(--color-text-secondary); font-size: 0.875rem">
+        Sanayi tipi tüm aboneler
+      </p>
+      <button class="btn btn-secondary btn-sm w-full mt-3">Düzenle</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        "
+      >
+        <span style="font-weight: 600; color: var(--color-text-primary)"
+          >Ticarethane</span
+        >
+        <span class="badge badge-success">245 abone</span>
+      </div>
+      <p style="color: var(--color-text-secondary); font-size: 0.875rem">
+        Ticari aboneler
+      </p>
+      <button class="btn btn-secondary btn-sm w-full mt-3">Düzenle</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        "
+      >
+        <span style="font-weight: 600; color: var(--color-text-primary)"
+          >Kritik Aboneler</span
+        >
+        <span class="badge badge-danger">23 abone</span>
+      </div>
+      <p style="color: var(--color-text-secondary); font-size: 0.875rem">
+        Yüksek tüketimli aboneler
+      </p>
+      <button class="btn btn-secondary btn-sm w-full mt-3">Düzenle</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

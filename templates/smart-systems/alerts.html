@@ -1,0 +1,51 @@
+{% extends 'base.html' %} {% block title %}Alarm Kuralları{% endblock %} {%
+block page_title %}Alarm Kuralları{% endblock %} {% set breadcrumb = [{'name':
+'Akıllı Sistemler', 'url': url_for('smart.index')}, {'name': 'Alarmlar'}] %} {%
+block content %}
+<div class="flex justify-between items-center mb-4">
+  <div>
+    <h2 style="font-weight: 600; color: var(--color-text-primary)">
+      Alarm Kuralları
+    </h2>
+  </div>
+  <button class="btn btn-primary">Yeni Kural</button>
+</div>
+<div class="card">
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Kural</th>
+          <th>Koşul</th>
+          <th>Eylem</th>
+          <th>Durum</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600">Yüksek Tüketim</td>
+          <td>Tüketim > Ortalama x 1.5</td>
+          <td>E-posta + SMS</td>
+          <td><span class="badge badge-success">Aktif</span></td>
+          <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">Bağlantı Kopması</td>
+          <td>5 dk boyunca yanıt yok</td>
+          <td>Dashboard uyarı</td>
+          <td><span class="badge badge-success">Aktif</span></td>
+          <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">Reaktif Ceza</td>
+          <td>Cos φ < 0.85</td>
+          <td>E-posta</td>
+          <td><span class="badge badge-warning">Pasif</span></td>
+          <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

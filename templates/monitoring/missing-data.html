@@ -1,0 +1,369 @@
+{% extends 'base.html' %} {% block title %}Eksik Veri Yönetimi{% endblock %} {%
+block page_title %}Eksik Veri Yönetimi{% endblock %} {% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-icon danger">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.total_missing if stats else 0 }}</div>
+    <div class="kpi-card-label">Toplam Eksik Veri</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon warning">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.critical if stats else 0 }}</div>
+    <div class="kpi-card-label">Kritik Öncelik</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon success">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.estimated if stats else 0 }}</div>
+    <div class="kpi-card-label">Tahmin Edildi</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon info">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">
+      {{ ((stats.estimated / stats.total_missing * 100) if stats and
+      stats.total_missing > 0 else 0) | round(1) }}%
+    </div>
+    <div class="kpi-card-label">Tamamlanma Oranı</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="grid grid-cols-5 gap-4">
+      <div>
+        <label class="form-label">Öncelik</label>
+        <select id="priorityFilter" class="form-select">
+          <option value="">Tümü</option>
+          <option value="high">Yüksek</option>
+          <option value="medium">Orta</option>
+          <option value="low">Düşük</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Durum</label>
+        <select id="statusFilter" class="form-select">
+          <option value="">Tümü</option>
+          <option value="pending">Bekliyor</option>
+          <option value="estimated">Tahmin Edildi</option>
+          <option value="manual">Manuel Girildi</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Başlangıç Tarihi</label>
+        <input type="date" id="startDate" class="form-input" />
+      </div>
+      <div>
+        <label class="form-label">Bitiş Tarihi</label>
+        <input type="date" id="endDate" class="form-input" />
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 8px">
+        <button class="btn btn-primary" onclick="applyFilters()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          Filtrele
+        </button>
+        <button class="btn btn-secondary" onclick="resetFilters()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Missing Data Grid -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Eksik Veri Listesi</h3>
+    <div style="display: flex; gap: 8px">
+      <button class="btn btn-secondary btn-sm" onclick="exportData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Dışa Aktar
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="refreshData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+        </svg>
+        Yenile
+      </button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="missingGrid" style="height: 600px; width: 100%"></div>
+  </div>
+</div>
+
+{% endblock %} {% block scripts %}
+<script>
+  // AG-Grid Column Definitions
+  const columnDefs = [
+    {
+      headerName: '',
+      field: 'id',
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      width: 50,
+      pinned: 'left'
+    },
+    {
+      headerName: 'Öncelik',
+      field: 'priority',
+      width: 100,
+      cellRenderer: params => {
+        const badges = {
+          'high': '<span class="badge badge-danger">Yüksek</span>',
+          'medium': '<span class="badge badge-warning">Orta</span>',
+          'low': '<span class="badge badge-info">Düşük</span>'
+        };
+        return badges[params.value] || params.value;
+      }
+    },
+    {
+      headerName: 'Sayaç No',
+      field: 'meter_serial',
+      width: 150,
+      cellStyle: { fontWeight: '500' }
+    },
+    {
+      headerName: 'Abone',
+      field: 'subscriber_name',
+      width: 200
+    },
+    {
+      headerName: 'Eksik Tarih',
+      field: 'missing_date',
+      width: 150,
+      valueFormatter: params => {
+        if ( !params.value ) return '';
+        return new Date( params.value ).toLocaleDateString( 'tr-TR' );
+      }
+    },
+    {
+      headerName: 'Eksik Saat',
+      field: 'missing_hour',
+      width: 100
+    },
+    {
+      headerName: 'Veri Tipi',
+      field: 'data_type',
+      width: 120
+    },
+    {
+      headerName: 'Beklenen Değer',
+      field: 'expected_value',
+      width: 140,
+      valueFormatter: params => params.value ? params.value.toFixed( 2 ) : '-'
+    },
+    {
+      headerName: 'Tahmin Edilen',
+      field: 'estimated_value',
+      width: 140,
+      valueFormatter: params => params.value ? params.value.toFixed( 2 ) : '-',
+      cellStyle: params => params.value ? { color: '#10B981', fontWeight: '600' } : {}
+    },
+    {
+      headerName: 'Durum',
+      field: 'status',
+      width: 130,
+      cellRenderer: params => {
+        const badges = {
+          'pending': '<span class="badge badge-secondary">Bekliyor</span>',
+          'estimated': '<span class="badge badge-success">Tahmin Edildi</span>',
+          'manual': '<span class="badge badge-primary">Manuel</span>'
+        };
+        return badges[params.value] || params.value;
+      }
+    },
+    {
+      headerName: 'İşlemler',
+      width: 200,
+      cellRenderer: params => {
+        return `
+                  <div style="display: flex; gap: 4px;">
+              <span class="badge badge-secondary">Kapalı</span>
+                  </div>
+              `;
+      }
+    }
+  ];
+
+  // Grid Options
+  const gridOptions = {
+    columnDefs: columnDefs,
+    rowData: {{ missing | tojson | safe }},
+  defaultColDef: {
+    sortable: true,
+      filter: true,
+        resizable: true
+  },
+  rowSelection: 'multiple',
+    pagination: true,
+      paginationPageSize: 20,
+        animateRows: true,
+          onGridReady: params => {
+            params.api.sizeColumnsToFit();
+          }
+  };
+
+  // Initialize Grid
+  document.addEventListener( 'DOMContentLoaded', () => {
+    const gridDiv = document.querySelector( '#missingGrid' );
+    new agGrid.Grid( gridDiv, gridOptions );
+  } );
+
+  // Functions
+  function applyFilters() {
+    const priority = document.getElementById( 'priorityFilter' ).value;
+    const status = document.getElementById( 'statusFilter' ).value;
+    const startDate = document.getElementById( 'startDate' ).value;
+    const endDate = document.getElementById( 'endDate' ).value;
+
+    const filterModel = {};
+
+    if ( priority ) filterModel.priority = { type: 'equals', filter: priority };
+    if ( status ) filterModel.status = { type: 'equals', filter: status };
+
+    gridOptions.api.setFilterModel( filterModel );
+  }
+
+  function resetFilters() {
+    document.getElementById( 'priorityFilter' ).value = '';
+    document.getElementById( 'statusFilter' ).value = '';
+    document.getElementById( 'startDate' ).value = '';
+    document.getElementById( 'endDate' ).value = '';
+    gridOptions.api.setFilterModel( null );
+  }
+
+  function refreshData() {
+    fetch( '/monitoring/api/missing-data' )
+      .then( res => res.json() )
+      .then( data => {
+        if ( data.success ) {
+          gridOptions.api.setRowData( data.data );
+          showNotification( 'Veriler güncellendi', 'success' );
+        }
+      } )
+      .catch( err => {
+        showNotification( 'Yenileme hatası: ' + err.message, 'error' );
+      } );
+  }
+
+
+
+
+  function exportData() {
+    const rows = [];
+    gridOptions.api.forEachNode( node => rows.push( node.data ) );
+
+    const csv = [
+      ['Öncelik', 'Sayaç No', 'Abone', 'Eksik Tarih', 'Veri Tipi', 'Beklenen', 'Tahmin', 'Durum'].join( ',' ),
+      ...rows.map( r => [
+        r.priority,
+        r.meter_serial,
+        r.subscriber_name,
+        r.missing_date,
+        r.data_type,
+        r.expected_value,
+        r.estimated_value,
+        r.status
+      ].join( ',' ) )
+    ].join( '\n' );
+
+    const blob = new Blob( [csv], { type: 'text/csv' } );
+    const url = window.URL.createObjectURL( blob );
+    const a = document.createElement( 'a' );
+    a.href = url;
+    a.download = `missing_data_${new Date().toISOString()}.csv`;
+    a.click();
+  }
+
+  function showNotification( message, type ) {
+    alert( message );
+  }
+
+  // Modal styling
+  const style = document.createElement( 'style' );
+  style.textContent = `
+      .modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+      }
+      .modal-content {
+          background: var(--color-bg-primary);
+          border-radius: 12px;
+          width: 90%;
+          max-height: 90vh;
+          overflow: auto;
+      }
+      .modal-header {
+          padding: 20px;
+          border-bottom: 1px solid var(--color-border);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+      .modal-body {
+          padding: 20px;
+      }
+      .modal-footer {
+          padding: 20px;
+          border-top: 1px solid var(--color-border);
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+      }
+      .modal-close {
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          color: var(--color-text-secondary);
+      }
+      .form-group {
+          margin-bottom: 16px;
+      }
+  `;
+  document.head.appendChild( style );
+</script>
+{% endblock %}

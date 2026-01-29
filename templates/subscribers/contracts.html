@@ -1,0 +1,55 @@
+{% extends 'base.html' %} {% block title %}Sözleşmeler{% endblock %} {% block
+page_title %}Abone Sözleşmeleri{% endblock %} {% set breadcrumb = [{'name':
+'Aboneler', 'url': url_for('subscribers.index')}, {'name': 'Sözleşmeler'}] %} {%
+block content %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Aktif Sözleşmeler</h3>
+    <button class="btn btn-primary btn-sm">Yeni Sözleşme</button>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sözleşme No</th>
+          <th>Abone</th>
+          <th>Sektör</th>
+          <th>Tarife</th>
+          <th>Sözleşme Gücü (kW)</th>
+          <th>Durum</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if contracts %}
+        {% for c in contracts %}
+        <tr>
+          <td style="font-weight: 600">{{ c.subscriber_code }}</td>
+          <td>{{ c.name }}</td>
+          <td>{{ c.sector or '-' }}</td>
+          <td>{{ c.tariff_name or '-' }}</td>
+          <td>{{ c.contract_demand or '-' }}</td>
+          <td>
+            <span
+              class="badge {{ 'badge-success' if c.status == 'Aktif' else 'badge-warning' if c.status == 'Askıda' else 'badge-danger' }}">
+              {{ c.status }}
+            </span>
+          </td>
+          <td>
+            <a href="{{ url_for('subscribers.contract_draft', id=c.id) }}"
+              class="btn btn-secondary btn-sm">Görüntüle</a>
+          </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center;color:var(--color-text-secondary);padding:24px;">
+            Kayıt bulunamadı.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

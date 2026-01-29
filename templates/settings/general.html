@@ -1,0 +1,46 @@
+{% extends 'base.html' %} {% block title %}Genel Ayarlar{% endblock %} {% block
+page_title %}Genel Ayarlar{% endblock %} {% set breadcrumb = [{'name':
+'Ayarlar', 'url': url_for('settings.index')}, {'name': 'Genel'}] %} {% block
+content %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Sistem Yapılandırması</h3>
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="form-label">Şirket Adı</label
+        ><input type="text" class="form-input" value="OSB Enerji Dağıtım" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vergi No</label
+        ><input type="text" class="form-input" value="1234567890" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Varsayılan KDV (%)</label
+        ><input type="number" class="form-input" value="20" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Para Birimi</label
+        ><select class="form-select">
+          <option>TRY (₺)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zaman Dilimi</label
+        ><select class="form-select">
+          <option>Europe/Istanbul (UTC+3)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tarih Formatı</label
+        ><select class="form-select">
+          <option>DD.MM.YYYY</option>
+          <option>YYYY-MM-DD</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary mt-4">Kaydet</button>
+  </div>
+</div>
+{% endblock %}

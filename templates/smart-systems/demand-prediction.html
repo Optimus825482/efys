@@ -1,0 +1,58 @@
+{% extends 'base.html' %} {% block title %}Talep Tahmini{% endblock %} {% block
+page_title %}Talep Tahmini{% endblock %} {% set breadcrumb = [{'name': 'Akıllı
+Sistemler', 'url': url_for('smart.index')}, {'name': 'Talep Tahmini'}] %} {%
+block content %}
+<div class="grid grid-cols-3 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-label">Bugün Tahmini</div>
+    <div class="kpi-card-value">34,567 kWh</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-label">Yarın Tahmini</div>
+    <div class="kpi-card-value">35,890 kWh</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-label">Model Doğruluğu</div>
+    <div class="kpi-card-value" style="color: var(--color-success)">%94.5</div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header"><h3 class="card-title">7 Günlük Tahmin</h3></div>
+  <div class="card-body">
+    <div class="chart-container-lg"><canvas id="predictionChart"></canvas></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  new Chart(document.getElementById("predictionChart"), {
+    type: "line",
+    data: {
+      labels: [
+        "Bugün",
+        "Yarın",
+        "+2 Gün",
+        "+3 Gün",
+        "+4 Gün",
+        "+5 Gün",
+        "+6 Gün",
+      ],
+      datasets: [
+        {
+          label: "Tahmin (kWh)",
+          data: [34567, 35890, 36200, 35100, 34800, 36500, 37200],
+          borderColor: "#2563EB",
+          backgroundColor: "rgba(37,99,235,0.1)",
+          fill: true,
+        },
+        {
+          label: "Gerçek",
+          data: [34234, null, null, null, null, null, null],
+          borderColor: "#10B981",
+          borderDash: [5, 5],
+        },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends 'base.html' %} {% block title %}Reaktif Enerji{% endblock %} {% block
+page_title %}Reaktif Enerji Raporu{% endblock %} {% set breadcrumb = [{'name':
+'Raporlama'}, {'name': 'Reaktif'}] %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">0.912</div>
+    <div class="kpi-card-label">Ort. Güç Faktörü</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value">2,456,000</div>
+    <div class="kpi-card-label">Endüktif (kVArh)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value">185,000</div>
+    <div class="kpi-card-label">Kapasitif (kVArh)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">₺45,230</div>
+    <div class="kpi-card-label">Toplam Ceza</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Cos φ Dağılımı</h3></div>
+    <div class="card-body"><div id="pfChart" style="height: 300px"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Reaktif Trend</h3></div>
+    <div class="card-body">
+      <div id="trendChart" style="height: 300px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Ceza Riski Olan Aboneler</h3>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div
+      id="grid"
+      class="ag-theme-alpine ag-theme-efys"
+      style="height: 350px"
+    ></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data
+  var reportData = {{ report | tojson | safe if report else '{}' }};
+  var trendData = reportData.trend || [];
+  var gridData = reportData.details || [];
+
+  // Calculate KPIs
+  var totalInductive = gridData.reduce((sum, d) => sum + (d.reactive_inductive || 0), 0);
+  var totalCapacitive = gridData.reduce((sum, d) => sum + (d.reactive_capacitive || 0), 0);
+  var totalPenalty = gridData.reduce((sum, d) => sum + (d.penalty_amount || 0), 0);
+  // Average PF calculation is complex, simplified arithmetic mean for KPI or weighted average if active energy available
+  // Provided data only has reactive and penalty, assuming avg pf from grid data if available, else placeholder
+  var avgPf = gridData.length > 0 ? (gridData.reduce((sum, d) => sum + (d.power_factor || 0), 0) / gridData.length) : 0;
+
+  // Update KPI Cards
+  document.querySelector('.kpi-card:nth-child(1) .kpi-card-value').textContent = avgPf.toFixed(3);
+  document.querySelector('.kpi-card:nth-child(2) .kpi-card-value').textContent = totalInductive.toLocaleString('tr-TR');
+  document.querySelector('.kpi-card:nth-child(3) .kpi-card-value').textContent = totalCapacitive.toLocaleString('tr-TR');
+  document.querySelector('.kpi-card:nth-child(4) .kpi-card-value').textContent = '₺' + totalPenalty.toLocaleString('tr-TR');
+
+  var pfChart = echarts.init(document.getElementById("pfChart"));
+
+  // Categorize PF for Pie Chart
+  var risk = 0, penalty = 0, normal = 0;
+  gridData.forEach(d => {
+      if (d.power_factor < 0.85) penalty++;
+      else if (d.power_factor < 0.90) risk++;
+      else normal++;
+  });
+
+  pfChart.setOption({
+    tooltip: { trigger: "item" },
+    series: [
+      {
+        type: "pie",
+        radius: ["50%", "75%"],
+        data: [
+          {
+            value: penalty,
+            name: "< 0.85 (Cezalı)",
+            itemStyle: { color: "#EF4444" },
+          },
+          {
+            value: risk,
+            name: "0.85-0.90 (Riskli)",
+            itemStyle: { color: "#F59E0B" },
+          },
+          {
+            value: normal,
+            name: ">= 0.90 (Normal)",
+            itemStyle: { color: "#10B981" },
+          },
+        ],
+        label: { formatter: "{b}: {c}" },
+      },
+    ],
+  });
+
+  var trendChart = echarts.init(document.getElementById("trendChart"));
+  trendChart.setOption({
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    xAxis: { type: "category", data: trendData.map(d => d.date) },
+    yAxis: { type: "value" },
+    series: [
+      {
+        name: "Endüktif",
+        type: "line",
+        data: trendData.map(d => d.inductive),
+        smooth: true,
+        lineStyle: { color: "#3B82F6" },
+      },
+      {
+        name: "Kapasitif",
+        type: "line",
+        data: trendData.map(d => d.capacitive),
+        smooth: true,
+        lineStyle: { color: "#F59E0B" },
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "15%", containLabel: true },
+  });
+
+  agGrid.createGrid(document.getElementById("grid"), {
+    columnDefs: [
+      { headerName: "Abone No", field: "subscriber_code", width: 120 },
+      { headerName: "Unvan", field: "name", flex: 1 },
+      {
+        headerName: "Cos φ",
+        field: "power_factor",
+        width: 100,
+        cellRenderer: (p) => {
+            var val = p.value;
+            var color = val < 0.90 ? (val < 0.85 ? "var(--color-danger)" : "var(--color-warning)") : "var(--color-success)";
+          return '<span style="color:' + color + ';font-weight:600">' +
+          (val ? val.toFixed(2) : '-') +
+          "</span>";
+        }
+      },
+      {
+        headerName: "Reaktif (kVArh)",
+        field: "reactive_inductive",
+        width: 140,
+        valueFormatter: (p) => p.value?.toLocaleString("tr-TR"),
+      },
+      {
+        headerName: "Ceza (₺)",
+        field: "penalty_amount",
+        width: 130,
+        valueFormatter: (p) => "₺" + p.value?.toLocaleString("tr-TR"),
+        cellStyle: { color: "var(--color-danger)", fontWeight: "600" },
+      },
+    ],
+    rowData: gridData,
+    localeText: AG_GRID_LOCALE_TR,
+  });
+  window.addEventListener("resize", () => {
+    pfChart.resize();
+    trendChart.resize();
+  });
+</script>
+{% endblock %}

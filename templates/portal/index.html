@@ -1,0 +1,300 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Panel Genel Bakış{% endblock %}
+{% block page_title %}Panel Genel Bakış{% endblock %}
+
+{% block content %}
+<!-- Critical Warning Banner (if reactive is high) -->
+{% if reactive and reactive.inductive_ratio > 18 %}
+<div
+    class="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-4 lg:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm">
+    <div
+        class="size-10 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center shrink-0 text-red-600 dark:text-red-200">
+        <span class="material-symbols-outlined text-2xl">warning</span>
+    </div>
+    <div class="flex-1">
+        <h3 class="text-red-900 dark:text-red-100 font-bold text-lg">⚠️ DİKKAT: Reaktif ceza sınırına yaklaşmaktasınız!
+        </h3>
+        <p class="text-red-700 dark:text-red-300 text-sm mt-1">
+            Endüktif oran <span class="font-bold">%{{ "%.1f"|format(reactive.inductive_ratio) }}</span> seviyesine
+            ulaştı. %20 sınırını aşmak üzeresiniz, lütfen kompanzasyon sistemini kontrol edin.
+        </p>
+    </div>
+    <a href="{{ url_for('portal.energy_quality') }}"
+        class="whitespace-nowrap px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-md">
+        Sistemi Kontrol Et
+    </a>
+</div>
+{% endif %}
+
+<!-- Main Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- LEFT COLUMN: Financials & Gauges -->
+    <div class="lg:col-span-8 flex flex-col gap-6">
+        <!-- Financial Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Estimated Bill Card -->
+            <div
+                class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col justify-between h-48 relative overflow-hidden group">
+                <div
+                    class="absolute right-0 top-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110">
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded text-primary">
+                            <span class="material-symbols-outlined text-xl">payments</span>
+                        </div>
+                        <h3 class="text-[#617789] dark:text-gray-400 font-medium text-sm">Güncel Tahmini Fatura</h3>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-4xl font-extrabold tracking-tight text-[#111518] dark:text-white">
+                            {{ "{:,.0f}".format(consumption.estimated_bill if consumption else 45230).replace(",", ".")
+                            }}<span class="text-2xl text-gray-400">,00 ₺</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="relative z-10 mt-auto flex items-end justify-between">
+                    <div>
+                        {% set change = consumption.bill_change if consumption else 12 %}
+                        <div
+                            class="flex items-center gap-1 {{ 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' if change > 0 else 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' }} font-bold text-sm px-2 py-1 rounded w-fit">
+                            <span class="material-symbols-outlined text-sm">{{ 'trending_up' if change > 0 else
+                                'trending_down' }}</span>
+                            <span>{{ '+' if change > 0 else '' }}{{ change }}%</span>
+                        </div>
+                        <p class="text-xs text-[#617789] dark:text-gray-500 mt-1">Geçen aya göre {{ 'artış' if change >
+                            0 else 'azalış' }}</p>
+                    </div>
+                    <a href="{{ url_for('portal.invoices') }}"
+                        class="text-primary text-sm font-bold hover:underline">Detaylar</a>
+                </div>
+            </div>
+
+            <!-- Consumption Summary Card -->
+            <div
+                class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col justify-between h-48 relative overflow-hidden group">
+                <div
+                    class="absolute right-0 top-0 w-32 h-32 bg-green-500/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110">
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="p-1.5 bg-green-50 dark:bg-green-900/30 rounded text-green-600">
+                            <span class="material-symbols-outlined text-xl">electric_bolt</span>
+                        </div>
+                        <h3 class="text-[#617789] dark:text-gray-400 font-medium text-sm">Toplam Tüketim (Bu Ay)</h3>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-4xl font-extrabold tracking-tight text-[#111518] dark:text-white">
+                            {{ "{:,.0f}".format(consumption.total_kwh if consumption else 12450).replace(",", ".") }}
+                            <span class="text-xl text-gray-400 font-medium">kWh</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="relative z-10 mt-auto flex items-end justify-between">
+                    <div>
+                        {% set cons_change = consumption.consumption_change if consumption else 5 %}
+                        <div
+                            class="flex items-center gap-1 {{ 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' if cons_change > 10 else 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' }} font-bold text-sm px-2 py-1 rounded w-fit">
+                            <span class="material-symbols-outlined text-sm">trending_flat</span>
+                            <span>{{ '+' if cons_change > 0 else '' }}{{ cons_change }}%</span>
+                        </div>
+                        <p class="text-xs text-[#617789] dark:text-gray-500 mt-1">Ortalama seviyede</p>
+                    </div>
+                    <a href="{{ url_for('portal.reports') }}"
+                        class="text-primary text-sm font-bold hover:underline">Analiz et</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reactive Power Gauges -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Inductive Gauge -->
+            <div
+                class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col items-center">
+                <div class="w-full flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-[#111518] dark:text-white flex items-center gap-2">
+                        {% set ind_ratio = reactive.inductive_ratio if reactive else 19.2 %}
+                        <span
+                            class="size-2 rounded-full {{ 'bg-red-500 animate-pulse' if ind_ratio > 18 else 'bg-green-500' }}"></span>
+                        Endüktif Oran
+                    </h3>
+                    <span
+                        class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">Hedef:
+                        &lt;20%</span>
+                </div>
+                <!-- ECharts Gauge -->
+                <div id="inductiveGauge" class="w-[340px] h-[220px]"></div>
+                <div class="mt-[-10px] text-center z-10">
+                    <p
+                        class="text-3xl font-bold {{ 'text-red-600 dark:text-red-400' if ind_ratio > 18 else 'text-green-600 dark:text-green-400' }}">
+                        %{{ "%.1f"|format(ind_ratio) }}</p>
+                    <p
+                        class="text-xs {{ 'text-red-500' if ind_ratio > 18 else 'text-green-600 dark:text-green-400' }} font-medium">
+                        {{ 'Riskli Bölge' if ind_ratio > 18 else 'Normal Seviye' }}</p>
+                </div>
+            </div>
+
+            <!-- Capacitive Gauge -->
+            <div
+                class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col items-center">
+                <div class="w-full flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-[#111518] dark:text-white flex items-center gap-2">
+                        {% set cap_ratio = reactive.capacitive_ratio if reactive else 4.1 %}
+                        <span
+                            class="size-2 rounded-full {{ 'bg-red-500' if cap_ratio > 15 else 'bg-green-500' }}"></span>
+                        Kapasitif Oran
+                    </h3>
+                    <span
+                        class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">Hedef:
+                        &lt;15%</span>
+                </div>
+                <!-- ECharts Gauge -->
+                <div id="capacitiveGauge" class="w-[340px] h-[220px]"></div>
+                <div class="mt-[-10px] text-center z-10">
+                    <p
+                        class="text-3xl font-bold {{ 'text-red-600 dark:text-red-400' if cap_ratio > 15 else 'text-green-600 dark:text-green-400' }}">
+                        %{{ "%.1f"|format(cap_ratio) }}</p>
+                    <p
+                        class="text-xs {{ 'text-red-500' if cap_ratio > 15 else 'text-green-600 dark:text-green-400' }} font-medium">
+                        {{ 'Riskli Bölge' if cap_ratio > 15 else 'Normal Seviye' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Chart & Quick Actions -->
+    <div class="lg:col-span-4 flex flex-col gap-6">
+        <!-- Daily Consumption Chart -->
+        <div
+            class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-bold text-[#111518] dark:text-white text-lg">Günlük Tüketim</h3>
+                <select id="chartPeriod"
+                    class="bg-transparent text-sm border-none text-[#617789] dark:text-gray-400 focus:ring-0 p-0 cursor-pointer">
+                    <option value="7">Son 7 Gün</option>
+                    <option value="30">Son 30 Gün</option>
+                </select>
+            </div>
+            <!-- Bar Chart -->
+            <div class="flex-1 flex items-end justify-between gap-2 h-64 w-full pt-4 border-b border-dashed border-gray-200 dark:border-gray-700 relative"
+                id="chartContainer">
+                {% set days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] %}
+                {% set values = daily_consumption if daily_consumption else [1200, 1850, 1600, 2100, 1950, 800, 600] %}
+                {% set max_val = values|max if values else 2100 %}
+                {% for i in range(7) %}
+                <div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+                    {% set height_pct = ((values[i] if i < values|length else 0) / max_val * 100)|int %} <div
+                        class="w-full max-w-[24px] {{ 'bg-primary' if i == 4 else 'bg-primary/20 dark:bg-primary/30' }} rounded-t-sm group-hover:bg-primary transition-all relative {{ 'shadow-lg shadow-primary/30' if i == 4 else '' }}"
+                        style="height: {{ height_pct }}%;">
+                        <div
+                            class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">
+                            {{ values[i] if i < values|length else 0 }} kWh</div>
+                        </div>
+                        <span
+                            class="text-xs {{ 'text-gray-900 dark:text-white font-bold' if i == 4 else 'text-gray-500 font-medium' }}">{{
+                            days[i] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+            <h3 class="font-bold text-[#111518] dark:text-white text-lg mb-4">Hızlı İşlemler</h3>
+            <div class="space-y-3">
+                <a href="{{ url_for('portal.invoices') }}"
+                    class="w-full flex items-center justify-between p-3 rounded-lg border border-[#f0f2f4] hover:bg-background-light dark:border-[#2a3644] dark:hover:bg-[#101a22] transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-primary/10 p-2 rounded-lg text-primary">
+                            <span class="material-symbols-outlined">download</span>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-sm font-semibold text-[#111518] dark:text-white">Faturayı İndir</p>
+                            <p class="text-xs text-[#617789] dark:text-gray-500">Son kesilen faturayı PDF al</p>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary">chevron_right</span>
+                </a>
+                <button
+                    class="w-full flex items-center justify-between p-3 rounded-lg border border-[#f0f2f4] hover:bg-background-light dark:border-[#2a3644] dark:hover:bg-[#101a22] transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg text-orange-600">
+                            <span class="material-symbols-outlined">report_problem</span>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-sm font-semibold text-[#111518] dark:text-white">Arıza Bildir</p>
+                            <p class="text-xs text-[#617789] dark:text-gray-500">Teknik ekibe sorun ilet</p>
+                        </div>
+                    </div>
+                    <span
+                        class="material-symbols-outlined text-gray-400 group-hover:text-orange-600">chevron_right</span>
+                </button>
+                <button
+                    class="w-full flex items-center justify-between p-3 rounded-lg border border-[#f0f2f4] hover:bg-background-light dark:border-[#2a3644] dark:hover:bg-[#101a22] transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600">
+                            <span class="material-symbols-outlined">support_agent</span>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-sm font-semibold text-[#111518] dark:text-white">Danışmanla Görüş</p>
+                            <p class="text-xs text-[#617789] dark:text-gray-500">Enerji tasarrufu hakkında</p>
+                        </div>
+                    </div>
+                    <span
+                        class="material-symbols-outlined text-gray-400 group-hover:text-green-600">chevron_right</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    google.charts.load( 'current', { packages: ['gauge'] } );
+    google.charts.setOnLoadCallback( drawPortalGauges );
+
+    function drawPortalGauges() {
+        const indValue = {{ ( reactive.inductive_ratio if reactive else 0) | round( 1 )
+    }};
+    const capValue = {{ ( reactive.capacitive_ratio if reactive else 0) | round( 1 ) }};
+
+    const indData = google.visualization.arrayToDataTable( [
+        ['Label', 'Value'],
+        ['Endüktif', indValue]
+    ] );
+
+    const capData = google.visualization.arrayToDataTable( [
+        ['Label', 'Value'],
+        ['Kapasitif', capValue]
+    ] );
+
+    const indOptions = {
+        width: 320,
+        height: 200,
+        min: 0,
+        max: 30,
+        redFrom: 20,
+        redTo: 30,
+        yellowFrom: 18,
+        yellowTo: 20,
+        minorTicks: 5
+    };
+
+    const capOptions = {
+        width: 320,
+        height: 200,
+        min: 0,
+        max: 25,
+        redFrom: 15,
+        redTo: 25,
+        yellowFrom: 12,
+        yellowTo: 15,
+        minorTicks: 5
+    };
+
+    new google.visualization.Gauge( document.getElementById( 'inductiveGauge' ) ).draw( indData, indOptions );
+    new google.visualization.Gauge( document.getElementById( 'capacitiveGauge' ) ).draw( capData, capOptions );
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends 'base.html' %} {% block title %}Fatura Raporu{% endblock %} {% block
+page_title %}Fatura Raporu{% endblock %} {% set breadcrumb = [{'name':
+'Raporlama'}, {'name': 'Fatura'}] %} {% block content %}
+<div class="grid grid-cols-3 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">₺4,256,000</div>
+    <div class="kpi-card-label">Toplam Faturalandırma</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-primary)">847</div>
+    <div class="kpi-card-label">Toplam Fatura</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">₺5,024</div>
+    <div class="kpi-card-label">Ortalama Fatura</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">Aylık Faturalandırma</h3>
+  </div>
+  <div class="card-body">
+    <div id="monthlyChart" style="height: 300px"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Fatura Listesi</h3>
+    <button class="grid-export-btn" onclick="exp()">Excel</button>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="grid" class="ag-theme-alpine ag-theme-efys" style="height: 400px"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data
+  var reportData = {{ report | tojson | safe if report else '{}' }};
+  var monthlyData = reportData.monthly || [];
+  var statusData = reportData.status || [];
+  var gridData = reportData.details || [];
+
+  // KPI Calculations
+  var totalAmount = gridData.reduce( ( sum, d ) => sum + ( d.amount || 0 ), 0 );
+  var collectedAmount = gridData.filter( d => d.status === 'Ödendi' ).reduce( ( sum, d ) => sum + ( d.amount || 0 ), 0 );
+  var pendingAmount = gridData.filter( d => d.status !== 'Ödendi' ).reduce( ( sum, d ) => sum + ( d.amount || 0 ), 0 );
+  var collectionRate = totalAmount > 0 ? ( collectedAmount / totalAmount * 100 ) : 0;
+
+  // Update KPI Cards
+  document.querySelector( '.kpi-card:nth-child(1) .kpi-card-value' ).textContent = '₺' + totalAmount.toLocaleString( 'tr-TR' );
+  document.querySelector( '.kpi-card:nth-child(2) .kpi-card-value' ).textContent = '₺' + collectedAmount.toLocaleString( 'tr-TR' );
+  document.querySelector( '.kpi-card:nth-child(3) .kpi-card-value' ).textContent = '₺' + pendingAmount.toLocaleString( 'tr-TR' );
+  document.querySelector( '.kpi-card:nth-child(4) .kpi-card-value' ).textContent = collectionRate.toFixed( 1 ) + '%';
+
+  var months = monthlyData.length ? monthlyData.map( m => m.month ) : ["Oca", "Şub"];
+
+  var monthlyChart = echarts.init( document.getElementById( "monthlyChart" ) );
+  monthlyChart.setOption( {
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: months },
+    yAxis: {
+      type: "value",
+      axisLabel: { formatter: ( v ) => "₺" + ( v / 1000 ).toFixed( 0 ) + "K" },
+    },
+    series: [
+      {
+        type: "bar",
+        data: monthlyData.length ? monthlyData.map( m => m.amount ) : [],
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient( 0, 0, 0, 1, [
+            { offset: 0, color: "#2563EB" },
+            { offset: 1, color: "#3B82F6" },
+          ] ),
+          borderRadius: [4, 4, 0, 0],
+        },
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
+  } );
+
+  var collectionChart = echarts.init(
+    document.getElementById( "collectionChart" ),
+  );
+  collectionChart.setOption( {
+    tooltip: { trigger: "item" },
+    series: [
+      {
+        type: "pie",
+        radius: ["50%", "75%"],
+        data: statusData.length ? statusData.map( s => ( {
+          value: s.count, // Or amount if available in status aggregation
+          name: s.status,
+          itemStyle: { color: s.status === 'Ödendi' ? "#10B981" : "#EF4444" }
+        } ) ) : [
+          { value: collectedAmount, name: "Tahsil Edilen", itemStyle: { color: "#10B981" } },
+          { value: pendingAmount, name: "Bekleyen", itemStyle: { color: "#EF4444" } }
+        ],
+        label: { formatter: "{b}: {c}" }, // If using amount, add TL symbol
+      },
+    ],
+  } );
+
+  var grid = agGrid.createGrid( document.getElementById( "grid" ), {
+    columnDefs: [
+      {
+        headerName: "Fatura No",
+        field: "bill_no",
+        width: 140,
+        cellStyle: { fontWeight: "600" },
+      },
+      { headerName: "Abone No", field: "subscriber_code", width: 120 },
+      { headerName: "Unvan", field: "name", flex: 1 },
+      { headerName: "Dönem", field: "period", width: 120 },
+      {
+        headerName: "Tutar",
+        field: "amount",
+        width: 130,
+        valueFormatter: ( p ) => "₺" + p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "Durum",
+        field: "status",
+        width: 110,
+        cellRenderer: ( p ) =>
+          '<span class="badge ' +
+          ( p.value === "Ödendi" ? "badge-success" : "badge-warning" ) +
+          '">' +
+          p.value +
+          "</span>",
+      },
+    ],
+    rowData: gridData,
+    pagination: true,
+    paginationPageSize: 10,
+    localeText: AG_GRID_LOCALE_TR,
+  } );
+  function exp() {
+    grid.exportDataAsExcel( { fileName: "fatura_raporu.xlsx" } );
+  }
+  window.addEventListener( "resize", () => {
+    monthlyChart.resize();
+    collectionChart.resize();
+  } );
+</script>
+{% endblock %}

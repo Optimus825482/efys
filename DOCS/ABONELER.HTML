@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EFYS - Abone Tüketim Raporu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "sans-serif"] },
+            colors: {
+              primary: "#1e3a8a",
+              secondary: "#0d9488",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-gray-50 text-gray-800">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center">
+            <div
+              class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold mr-3"
+            >
+              E
+            </div>
+            <span class="font-bold text-xl tracking-tight text-gray-900"
+              >EFYS
+              <span class="text-xs text-gray-500 font-normal"
+                >Abone Veritabanı</span
+              ></span
+            >
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right mr-4 hidden sm:block">
+              <div class="text-xs text-gray-500">Toplam Abone</div>
+              <div class="font-bold">57 Kayıt</div>
+            </div>
+            <div class="text-right mr-4 hidden sm:block">
+              <div class="text-xs text-gray-500">Günlük Toplam Tüketim</div>
+              <div class="font-bold text-blue-600">~245.5 MWh</div>
+            </div>
+            <button
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition"
+            >
+              <i class="ph ph-microsoft-excel-logo mr-2"></i> Excel İndir
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Filters -->
+      <div
+        class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+      >
+        <div class="relative w-full sm:w-96">
+          <div
+            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+          >
+            <i class="ph ph-magnifying-glass text-gray-400"></i>
+          </div>
+          <input
+            type="text"
+            id="searchInput"
+            onkeyup="filterTable()"
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="Firma adı, sektör veya parsel ara..."
+          />
+        </div>
+        <div class="flex gap-2">
+          <select
+            class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            onchange="filterSector(this.value)"
+          >
+            <option value="all">Tüm Sektörler</option>
+            <option value="Deri">Deri & Tekstil</option>
+            <option value="Gıda">Gıda & Tarım</option>
+            <option value="Kimya">Kimya</option>
+            <option value="Enerji">Enerji</option>
+            <option value="Makine">Makine & Metal</option>
+          </select>
+          <select
+            class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            onchange="filterGes(this.value)"
+          >
+            <option value="all">GES Durumu (Tümü)</option>
+            <option value="Var">GES Var / Üretici</option>
+            <option value="Yok">GES Yok</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Table Card -->
+      <div
+        class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200"
+      >
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200" id="dataTable">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Firma Ünvanı
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Ada / Parsel
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Sektör
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  GES / Üretim
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Kurulu Güç (Tahmini)
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Günlük Tüketim (kWh)
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Durum
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+              <!-- Veri Satırları JS ile Eklenecek -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Veri Seti (Sadece kesinleşmiş GES/Üretim verileri eklendi)
+      const companies = [
+        {
+          name: "AĞAOĞLU DERİ SAN. TİC. LTD. ŞTİ.",
+          ada: 194,
+          parsel: 12,
+          area: 10000,
+          sector: "Deri",
+          consumption: 5200,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "AGROPOINT TARIM DAĞITIM",
+          ada: 215,
+          parsel: 4,
+          area: 5014,
+          sector: "Gıda",
+          consumption: 1200,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "AGROWE TARIM SANAYİ",
+          ada: 210,
+          parsel: 7,
+          area: 8428,
+          sector: "Gıda",
+          consumption: 1850,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ALFA TOHUM GIDA TAR.",
+          ada: 212,
+          parsel: 11,
+          area: 4524,
+          sector: "Gıda",
+          consumption: 950,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ALFAGRO TOHUM TARIM",
+          ada: 212,
+          parsel: 14,
+          area: 9938,
+          sector: "Gıda",
+          consumption: 2100,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ARSLANTAŞ GIDA SAN.",
+          ada: 214,
+          parsel: 6,
+          area: 5053,
+          sector: "Gıda",
+          consumption: 1100,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "AKSAPET DERİ SANAYİ",
+          ada: 195,
+          parsel: 9,
+          area: 5000,
+          sector: "Deri",
+          consumption: 2600,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "BEKİR BURAK UYGUNER (1)",
+          ada: 200,
+          parsel: 9,
+          area: 8019,
+          sector: "Deri",
+          consumption: 4100,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "BEKİR BURAK UYGUNER (2)",
+          ada: 200,
+          parsel: 8,
+          area: 7793,
+          sector: "Deri",
+          consumption: 3950,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "BİMKO ELEKTRİK SANAYİ",
+          ada: 195,
+          parsel: 7,
+          area: 4999,
+          sector: "Enerji",
+          consumption: 3500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "BİRLİK FOOD İTHALAT",
+          ada: 195,
+          parsel: 11,
+          area: 5000,
+          sector: "Gıda",
+          consumption: 1250,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "BULUT DERİ İMALAT",
+          ada: 195,
+          parsel: 2,
+          area: 4999,
+          sector: "Deri",
+          consumption: 2500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "CHEMİOLA KİMYA SAN.",
+          ada: 212,
+          parsel: 10,
+          area: 9063,
+          sector: "Kimya",
+          consumption: 6800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "CT AGRİNA TARIM",
+          ada: 215,
+          parsel: 4,
+          area: 5014,
+          sector: "Gıda",
+          consumption: 1100,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ÇALIŞKAN GIDA TARIM",
+          ada: 215,
+          parsel: 4,
+          area: 5014,
+          sector: "Gıda",
+          consumption: 1100,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DAWARİ VATAN TARIM",
+          ada: 199,
+          parsel: 1,
+          area: 8134,
+          sector: "Gıda",
+          consumption: 1900,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DENİZCİ OTOMOTİV LOJ.",
+          ada: 189,
+          parsel: 7,
+          area: 12604,
+          sector: "Lojistik",
+          consumption: 1500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DENİZLER DERİ GİYİM",
+          ada: 194,
+          parsel: 9,
+          area: 10000,
+          sector: "Deri",
+          consumption: 5100,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DERİKİM KİMYEVİ MAD.",
+          ada: 212,
+          parsel: 12,
+          area: 4524,
+          sector: "Kimya",
+          consumption: 3400,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DERİSAY DERİ SANAYİ",
+          ada: 195,
+          parsel: 19,
+          area: 11922,
+          sector: "Deri",
+          consumption: 6200,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DİBA DIŞ TİCARET",
+          ada: 193,
+          parsel: 18,
+          area: 3578,
+          sector: "Ticaret",
+          consumption: 400,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DOĞA SÜT VE GIDA",
+          ada: 212,
+          parsel: 13,
+          area: 8999,
+          sector: "Gıda",
+          consumption: 4500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DORUK AGRO TARIM",
+          ada: 217,
+          parsel: 4,
+          area: 8719,
+          sector: "Gıda",
+          consumption: 1800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "DYEHOUSE KUMAŞ",
+          ada: 195,
+          parsel: 13,
+          area: 9900,
+          sector: "Tekstil",
+          consumption: 7500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ELİF DERİ SANAYİ",
+          ada: 193,
+          parsel: 20,
+          area: 3550,
+          sector: "Deri",
+          consumption: 1800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ENSAR DERİ İMALAT",
+          ada: 195,
+          parsel: 14,
+          area: 10380,
+          sector: "Deri",
+          consumption: 5400,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ERALP KİMYA SU TEK.",
+          ada: 196,
+          parsel: 19,
+          area: 25000,
+          sector: "Kimya",
+          consumption: 18500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "GELNER GIDA A.Ş.",
+          ada: 213,
+          parsel: 3,
+          area: 22200,
+          sector: "Gıda",
+          consumption: 12000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "GÖNEN SARACİYE DERİ",
+          ada: 196,
+          parsel: 23,
+          area: 20000,
+          sector: "Deri",
+          consumption: 10500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "GÖNEN ÇETİNKAYA DERİ",
+          ada: 195,
+          parsel: 10,
+          area: 5000,
+          sector: "Deri",
+          consumption: 2600,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "GÖNEN KAPTAN MAKİNA",
+          ada: 183,
+          parsel: 8,
+          area: 3918,
+          sector: "Makine",
+          consumption: 1800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "GÖNEN MUTLULAR (1)",
+          ada: 197,
+          parsel: 12,
+          area: 20117,
+          sector: "Enerji",
+          consumption: 45000,
+          status: "Aktif",
+          ges: "Var (Biyokütle)",
+          capacity: "27.6 MWe",
+        },
+        {
+          name: "GÖNEN MUTLULAR (2)",
+          ada: 216,
+          parsel: 4,
+          area: 15000,
+          sector: "Enerji",
+          consumption: 32000,
+          status: "Aktif",
+          ges: "Var (Biyokütle)",
+          capacity: "10.0 MWe",
+        },
+        {
+          name: "GÖN GERİ DÖNÜŞÜM",
+          ada: 200,
+          parsel: 2,
+          area: 7899,
+          sector: "Geri Dönüşüm",
+          consumption: 4200,
+          status: "Aktif",
+          ges: "Var (Çatı GES)",
+          capacity: "0.8 MWp",
+        },
+        {
+          name: "HALİL ALTUĞ UYGUNER",
+          ada: 200,
+          parsel: 10,
+          area: 7979,
+          sector: "Deri",
+          consumption: 4100,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "HORNUNG MAKİNA",
+          ada: 191,
+          parsel: 14,
+          area: 6058,
+          sector: "Makine",
+          consumption: 2800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "KAİZEN ENDÜSTRİ",
+          ada: 191,
+          parsel: 14,
+          area: 6058,
+          sector: "Makine",
+          consumption: 2800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "İRİ DERİ SANAYİ",
+          ada: 194,
+          parsel: 10,
+          area: 5000,
+          sector: "Deri",
+          consumption: 2600,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "İSK METAL KİMYA",
+          ada: 210,
+          parsel: 8,
+          area: 8427,
+          sector: "Kimya",
+          consumption: 6300,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "İSMAİL ORHAN TEREYAĞ",
+          ada: 214,
+          parsel: 5,
+          area: 5047,
+          sector: "Gıda",
+          consumption: 3200,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "KURTAKLAR KİMYA",
+          ada: 191,
+          parsel: 11,
+          area: 6660,
+          sector: "Kimya",
+          consumption: 5000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "KURŞUNOĞLU DERİ",
+          ada: 195,
+          parsel: 17,
+          area: 20000,
+          sector: "Deri",
+          consumption: 10500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "METAPER PERLİT",
+          ada: 195,
+          parsel: 3,
+          area: 4999,
+          sector: "Madencilik",
+          consumption: 3800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "MİGROS TİCARET A.Ş.",
+          ada: 213,
+          parsel: 4,
+          area: 44321,
+          sector: "Lojistik",
+          consumption: 8500,
+          status: "Aktif",
+          ges: "Var (Çatı GES)",
+          capacity: "1.2 MWp",
+        },
+        {
+          name: "MUTLULAR ENERJİ (Lisanlı Depo)",
+          ada: 197,
+          parsel: 13,
+          area: 80614,
+          sector: "Depolama",
+          consumption: 12000,
+          status: "Aktif",
+          ges: "Var (Biyokütle)",
+          capacity: "Dahil",
+        },
+        {
+          name: "MUTLU EVCİL HAYVAN",
+          ada: 194,
+          parsel: 5,
+          area: 10933,
+          sector: "Gıda",
+          consumption: 5800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "NİZAMOĞULLARI ELEKTRİK",
+          ada: 191,
+          parsel: 12,
+          area: 5364,
+          sector: "Makine",
+          consumption: 2200,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "OKKA BUTİK AKSESUAR",
+          ada: 195,
+          parsel: 21,
+          area: 9812,
+          sector: "Tekstil",
+          consumption: 3500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ONSET KİMYA",
+          ada: 191,
+          parsel: 14,
+          area: 6058,
+          sector: "Kimya",
+          consumption: 4500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ÖZDERİ DERİCİLİK",
+          ada: 194,
+          parsel: 1,
+          area: 30078,
+          sector: "Deri",
+          consumption: 16000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ÖZER GIDA",
+          ada: 196,
+          parsel: 26,
+          area: 25000,
+          sector: "Gıda",
+          consumption: 9000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "PAKSAN MAKİNA",
+          ada: 213,
+          parsel: 2,
+          area: 44394,
+          sector: "Makine",
+          consumption: 22000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "REYES KİMYA",
+          ada: 191,
+          parsel: 13,
+          area: 5371,
+          sector: "Kimya",
+          consumption: 4000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "SELİNA KÜRK DERİ",
+          ada: 193,
+          parsel: 12,
+          area: 5681,
+          sector: "Deri",
+          consumption: 3000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "SELJEL JELATİN",
+          ada: 191,
+          parsel: 18,
+          area: 39208,
+          sector: "Gıda",
+          consumption: 35000,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "SPATÖLYEM PLASTİK",
+          ada: 195,
+          parsel: 8,
+          area: 4999,
+          sector: "Kimya",
+          consumption: 3800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "TURKUAZ TEKNİK",
+          ada: 210,
+          parsel: 10,
+          area: 8427,
+          sector: "Makine",
+          consumption: 3200,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "VARİANT MOBİLYA",
+          ada: 210,
+          parsel: 9,
+          area: 8427,
+          sector: "Mobilya",
+          consumption: 3500,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "VEGAN İŞLER GIDA",
+          ada: 215,
+          parsel: 5,
+          area: 5130,
+          sector: "Gıda",
+          consumption: 1800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "YAHYA KİMYA",
+          ada: 194,
+          parsel: 4,
+          area: 10938,
+          sector: "Kimya",
+          consumption: 8200,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "ZAFFRE KİMYA",
+          ada: 194,
+          parsel: 8,
+          area: 4999,
+          sector: "Kimya",
+          consumption: 3800,
+          status: "Aktif",
+          ges: "Yok",
+          capacity: "-",
+        },
+        {
+          name: "BOŞ PARSEL (216/8)",
+          ada: 216,
+          parsel: 8,
+          area: 17113,
+          sector: "Boş",
+          consumption: 0,
+          status: "Pasif",
+          ges: "-",
+          capacity: "-",
+        },
+        {
+          name: "BOŞ PARSEL (193/19)",
+          ada: 193,
+          parsel: 19,
+          area: 3129,
+          sector: "Boş",
+          consumption: 0,
+          status: "Pasif",
+          ges: "-",
+          capacity: "-",
+        },
+        {
+          name: "BOŞ PARSEL (196/16)",
+          ada: 196,
+          parsel: 16,
+          area: 21519,
+          sector: "Boş",
+          consumption: 0,
+          status: "Pasif",
+          ges: "-",
+          capacity: "-",
+        },
+        {
+          name: "BOŞ PARSEL (191/22)",
+          ada: 191,
+          parsel: 22,
+          area: 14741,
+          sector: "Boş",
+          consumption: 0,
+          status: "Pasif",
+          ges: "-",
+          capacity: "-",
+        },
+      ];
+
+      function renderTable(data) {
+        const tbody = document.querySelector("#dataTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach((company) => {
+          // Sektöre göre renk
+          let sectorColor = "bg-gray-100 text-gray-800";
+          if (company.sector.includes("Deri"))
+            sectorColor = "bg-orange-100 text-orange-800";
+          if (company.sector.includes("Gıda"))
+            sectorColor = "bg-green-100 text-green-800";
+          if (company.sector.includes("Kimya"))
+            sectorColor = "bg-purple-100 text-purple-800";
+          if (company.sector.includes("Enerji"))
+            sectorColor = "bg-yellow-100 text-yellow-800";
+          if (company.sector.includes("Makine"))
+            sectorColor = "bg-blue-100 text-blue-800";
+          if (company.sector.includes("Boş"))
+            sectorColor = "bg-red-50 text-red-400";
+
+          // GES Durumuna göre ikon
+          let gesIcon = "";
+          if (company.ges.includes("Var") || company.ges.includes("Grup")) {
+            gesIcon =
+              '<span class="text-yellow-600 font-bold flex items-center justify-center"><i class="ph ph-sun text-lg mr-1"></i> Var</span>';
+          } else {
+            gesIcon = '<span class="text-gray-400">-</span>';
+          }
+
+          // Tüketim formatlama
+          const consumptionStr =
+            company.consumption > 0
+              ? company.consumption.toLocaleString("tr-TR")
+              : "-";
+
+          const row = `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${company.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-500">${company.ada} / ${company.parsel}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${sectorColor}">
+                                ${company.sector}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">${gesIcon}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-gray-600">${company.capacity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right font-bold text-gray-700">${consumptionStr}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            ${
+                              company.status === "Aktif"
+                                ? '<span class="text-green-600"><i class="ph ph-check-circle text-lg"></i></span>'
+                                : '<span class="text-gray-300"><i class="ph ph-prohibit text-lg"></i></span>'
+                            }
+                        </td>
+                    </tr>
+                `;
+          tbody.insertAdjacentHTML("beforeend", row);
+        });
+      }
+
+      // Search Filter
+      function filterTable() {
+        const input = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const filtered = companies.filter(
+          (c) =>
+            c.name.toLowerCase().includes(input) ||
+            c.sector.toLowerCase().includes(input) ||
+            c.ada.toString().includes(input),
+        );
+        renderTable(filtered);
+      }
+
+      // Sector Filter
+      function filterSector(sector) {
+        if (sector === "all") {
+          renderTable(companies);
+        } else {
+          const filtered = companies.filter((c) => c.sector.includes(sector));
+          renderTable(filtered);
+        }
+      }
+
+      // GES Filter
+      function filterGes(val) {
+        if (val === "all") {
+          renderTable(companies);
+        } else if (val === "Var") {
+          const filtered = companies.filter(
+            (c) => c.ges.includes("Var") || c.ges.includes("Grup"),
+          );
+          renderTable(filtered);
+        } else {
+          const filtered = companies.filter(
+            (c) => !c.ges.includes("Var") && !c.ges.includes("Grup"),
+          );
+          renderTable(filtered);
+        }
+      }
+
+      // Initial Render
+      renderTable(companies);
+    </script>
+  </body>
+</html>

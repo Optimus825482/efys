@@ -1,0 +1,322 @@
+{% extends 'base.html' %} {% block title %}Abone Listesi{% endblock %} {% block
+page_title %}Abone Listesi{% endblock %} {% set breadcrumb = [{'name':
+'Aboneler', 'url': url_for('subscribers.index')}, {'name': 'Liste'}] %} {% block
+content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">{{ stats.total if stats else 0 }}</div>
+    <div class="kpi-card-label">Toplam Abone</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">
+      {{ stats.active if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Aktif</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)">
+      {{ stats.suspended if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Askıda</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">
+      {{ stats.closed if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Kapalı</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header"
+    style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <h3 class="card-title">Abone Listesi</h3>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="searchInput" class="form-input" style="min-width:220px;" placeholder="Abone ara..."
+        oninput="onFilterTextBoxChanged()" />
+      <select id="sectorFilter" class="form-select" onchange="onSectorFilterChanged()">
+        <option value="">Sektör (Tümü)</option>
+      </select>
+      <select id="statusFilter" class="form-select" onchange="onStatusFilterChanged()">
+        <option value="">Durum (Tümü)</option>
+        <option value="Aktif">Aktif</option>
+        <option value="Askıda">Askıda</option>
+        <option value="Kapalı">Kapalı</option>
+      </select>
+      <button class="btn btn-secondary" onclick="exportToCsv()">CSV</button>
+      <button class="btn btn-primary" onclick="exportToExcel()">Excel</button>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <div id="subscriberGrid" class="ag-theme-alpine ag-theme-efys" style="height:520px;"></div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Sektör Dağılımı</h3>
+    </div>
+    <div class="card-body">
+      <div id="sectorChart" style="height:320px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Sektöre Göre Tüketim</h3>
+    </div>
+    <div class="card-body">
+      <div id="consumptionChart" style="height:320px"></div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  var subscriberData = {{ subscribers | tojson | safe if subscribers else '[]' }};
+
+  var gridOptions = {
+    columnDefs: [
+      {
+        headerName: 'Abone No',
+        field: 'subscriber_no',
+        sortable: true,
+        filter: true,
+        width: 140,
+        cellStyle: { fontWeight: '600' }
+      },
+      {
+        headerName: 'Unvan',
+        field: 'name',
+        sortable: true,
+        filter: true,
+        flex: 2,
+        minWidth: 250
+      },
+      {
+        headerName: 'Sektör',
+        field: 'sector',
+        sortable: true,
+        filter: true,
+        width: 150,
+        cellRenderer: function ( params ) {
+          var value = params.value || 'Diğer';
+          var colors = {
+            'Gıda': '#10B981',
+            'Metal': '#6B7280',
+            'Kimya': '#8B5CF6',
+            'Tekstil': '#EC4899',
+            'Plastik': '#F59E0B',
+            'Alüminyum': '#3B82F6',
+            'Yapı Malzemeleri': '#EF4444',
+            'Makine/İmalat': '#6366F1',
+            'Lojistik': '#14B8A6',
+            'Diğer': '#9CA3AF'
+          };
+          var color = colors[value] || '#9CA3AF';
+          return '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:' + color + ';"></span>' + value + '</span>';
+        }
+      },
+      {
+        headerName: 'Sayaç No',
+        field: 'meter_no',
+        sortable: true,
+        filter: true,
+        width: 120
+      },
+      {
+        headerName: 'Ort. Günlük (kWh)',
+        field: 'avg_daily_kwh',
+        sortable: true,
+        filter: 'agNumberColumnFilter',
+        width: 160,
+        valueFormatter: function ( params ) {
+          return params.value ? params.value.toLocaleString( 'tr-TR' ) : '0';
+        },
+        cellStyle: { textAlign: 'right' }
+      },
+      {
+        headerName: 'Durum',
+        field: 'status',
+        sortable: true,
+        filter: true,
+        width: 110,
+        cellRenderer: function ( params ) {
+          var badgeClass = params.value === 'Aktif' ? 'badge-success' :
+            params.value === 'Askıda' ? 'badge-warning' : 'badge-danger';
+          return '<span class="badge ' + badgeClass + '">' + params.value + '</span>';
+        }
+      },
+      {
+        headerName: 'İşlemler',
+        field: 'id',
+        width: 180,
+        sortable: false,
+        filter: false,
+        cellRenderer: function ( params ) {
+          return '<div style="display:flex;gap:8px;">' +
+            '<button class="btn btn-secondary btn-sm" onclick="viewDetail(' + params.value + ')">Detay</button>' +
+            '<button class="btn btn-secondary btn-sm" onclick="editSubscriber(' + params.value + ')">Düzenle</button>' +
+            '</div>';
+        }
+      }
+    ],
+    rowData: subscriberData,
+    defaultColDef: {
+      resizable: true,
+      sortable: true
+    },
+    pagination: true,
+    paginationPageSize: 15,
+    paginationPageSizeSelector: [10, 15, 25, 50, 100],
+    animateRows: true,
+    rowSelection: 'multiple',
+    localeText: AG_GRID_LOCALE_TR,
+    onGridReady: function ( params ) {
+      params.api.sizeColumnsToFit();
+    }
+  };
+
+  var gridDiv = document.getElementById( 'subscriberGrid' );
+  var gridApi = agGrid.createGrid( gridDiv, gridOptions );
+
+  function onFilterTextBoxChanged() {
+    gridApi.setGridOption( 'quickFilterText', document.getElementById( 'searchInput' ).value );
+  }
+
+  function onSectorFilterChanged() {
+    var val = document.getElementById( 'sectorFilter' ).value;
+    gridApi.setColumnFilterModel( 'sector', val ? { type: 'contains', filter: val } : null ).then( function () {
+      gridApi.onFilterChanged();
+    } );
+  }
+
+  function onStatusFilterChanged() {
+    var val = document.getElementById( 'statusFilter' ).value;
+    gridApi.setColumnFilterModel( 'status', val ? { type: 'equals', filter: val } : null ).then( function () {
+      gridApi.onFilterChanged();
+    } );
+  }
+
+  function exportToExcel() {
+    gridApi.exportDataAsExcel( {
+      fileName: 'aboneler_' + new Date().toISOString().split( 'T' )[0] + '.xlsx'
+    } );
+  }
+
+  function exportToCsv() {
+    gridApi.exportDataAsCsv( {
+      fileName: 'aboneler_' + new Date().toISOString().split( 'T' )[0] + '.csv'
+    } );
+  }
+
+  function viewDetail( id ) {
+    window.location.href = '/subscribers/' + id;
+  }
+
+  function editSubscriber( id ) {
+    window.location.href = '/subscribers/' + id + '/edit';
+  }
+
+  var sectors = Array.from( new Set( subscriberData.map( s => ( s.sector || 'Diğer' ) ) ) );
+  sectors.sort();
+  var sectorSelect = document.getElementById( 'sectorFilter' );
+  sectors.forEach( function ( sec ) {
+    var opt = document.createElement( 'option' );
+    opt.value = sec;
+    opt.textContent = sec;
+    sectorSelect.appendChild( opt );
+  } );
+
+  var sectorChart = echarts.init( document.getElementById( 'sectorChart' ) );
+  var sectorData = {};
+  subscriberData.forEach( function ( s ) {
+    var key = s.sector || 'Diğer';
+    var consumption = parseFloat( s.avg_daily_kwh || 0 );
+    if ( sectorData[key] ) {
+      sectorData[key].count++;
+      sectorData[key].consumption += consumption;
+    } else {
+      sectorData[key] = { count: 1, consumption: consumption };
+    }
+  } );
+
+  var pieData = Object.keys( sectorData ).map( function ( key ) {
+    return { name: key, value: sectorData[key].count };
+  } );
+
+  sectorChart.setOption( {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} abone ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center'
+    },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 8,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+      data: pieData,
+      color: ['#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#6366F1', '#14B8A6', '#EC4899', '#6B7280', '#9CA3AF']
+    }]
+  } );
+
+  var consumptionChart = echarts.init( document.getElementById( 'consumptionChart' ) );
+  var barLabels = Object.keys( sectorData );
+  var barValues = barLabels.map( function ( key ) {
+    return sectorData[key].consumption * 30;
+  } );
+
+  consumptionChart.setOption( {
+    tooltip: {
+      trigger: 'axis',
+      formatter: function ( params ) {
+        return params[0].name + ': ' + params[0].value.toLocaleString( 'tr-TR' ) + ' kWh/ay';
+      }
+    },
+    xAxis: {
+      type: 'category',
+      data: barLabels,
+      axisLabel: { rotate: 45, fontSize: 11 }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { formatter: function ( value ) { return ( value / 1000 ).toFixed( 0 ) + 'K'; } }
+    },
+    series: [{
+      type: 'bar',
+      data: barValues,
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient( 0, 0, 0, 1, [
+          { offset: 0, color: '#2563EB' },
+          { offset: 1, color: '#3B82F6' }
+        ] ),
+        borderRadius: [4, 4, 0, 0]
+      },
+      emphasis: {
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient( 0, 0, 0, 1, [
+            { offset: 0, color: '#1D4ED8' },
+            { offset: 1, color: '#2563EB' }
+          ] )
+        }
+      }
+    }],
+    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true }
+  } );
+
+  window.addEventListener( 'resize', function () {
+    sectorChart.resize();
+    consumptionChart.resize();
+  } );
+</script>
+{% endblock %}

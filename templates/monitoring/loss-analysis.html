@@ -1,0 +1,136 @@
+{% extends 'base.html' %} {% block title %}Kayıp/Kaçak Analizi{% endblock %} {%
+block page_title %}Kayıp/Kaçak Analizi{% endblock %} {% set breadcrumb =
+[{'name': 'Veri İzleme', 'url': url_for('monitoring.index')}, {'name':
+'Kayıp/Kaçak'}] %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-label">Ana Sayaç (Giriş)</div>
+    <div class="kpi-card-value" id="kpi-input">0 kWh</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-label">Abone Sayaçları Toplamı</div>
+    <div class="kpi-card-value" id="kpi-sold">0 kWh</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-label">Fark (Kayıp)</div>
+    <div class="kpi-card-value" style="color: var(--color-danger)" id="kpi-loss">0 kWh</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-label">Kayıp Oranı</div>
+    <div class="kpi-card-value" style="color: var(--color-warning)" id="kpi-rate">0%</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Aylık Kayıp Trendi</h3>
+    </div>
+    <div class="card-body">
+      <div id="trendChart" style="height: 280px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Sektörel Kayıp Dağılımı</h3>
+    </div>
+    <div class="card-body">
+      <div id="sectorChart" style="height: 280px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Abone Bazlı Kayıp Payları (Son 30 Gün)</h3>
+    <a href="{{ url_for('reports.loss_report') }}" class="btn btn-secondary btn-sm">Rapor Sayfası →</a>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="subscriberGrid" class="ag-theme-alpine ag-theme-efys" style="height: 400px"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Backend data from get_osb_loss_report
+  var reportData = {{ report | tojson | safe if report else '{}' }};
+  var currentData = reportData.current || {};
+  var monthlyData = reportData.monthly || [];
+  var subscriberData = reportData.subscribers || [];
+
+  // Update KPI Cards
+  document.getElementById( 'kpi-input' ).textContent = ( currentData.input || 0 ).toLocaleString( 'tr-TR' ) + ' kWh';
+  document.getElementById( 'kpi-sold' ).textContent = ( currentData.sold || 0 ).toLocaleString( 'tr-TR' ) + ' kWh';
+  document.getElementById( 'kpi-loss' ).textContent = ( currentData.loss || 0 ).toLocaleString( 'tr-TR' ) + ' kWh';
+  document.getElementById( 'kpi-rate' ).textContent = ( currentData.loss_rate || 0 ).toFixed( 2 ) + '%';
+
+  // Monthly Trend Chart
+  var trendChart = echarts.init( document.getElementById( "trendChart" ) );
+  trendChart.setOption( {
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    xAxis: { type: "category", data: monthlyData.map( d => d.month ) },
+    yAxis: [
+      { type: "value", name: "kWh", axisLabel: { formatter: v => ( v / 1000000 ).toFixed( 1 ) + 'M' } },
+      { type: "value", name: "%", max: 10 }
+    ],
+    series: [
+      { name: "Giriş", type: "bar", data: monthlyData.map( d => d.input ), itemStyle: { color: "#3B82F6" } },
+      { name: "Satılan", type: "bar", data: monthlyData.map( d => d.sold ), itemStyle: { color: "#10B981" } },
+      { name: "Kayıp %", type: "line", yAxisIndex: 1, data: monthlyData.map( d => d.loss_rate ), smooth: true, lineStyle: { color: "#EF4444", width: 2 } }
+    ],
+    grid: { left: "3%", right: "4%", bottom: "15%", containLabel: true },
+  } );
+
+  // Sector Chart (group by sector)
+  var sectorMap = {};
+  subscriberData.forEach( s => {
+    var sec = s.sector || 'Diğer';
+    if ( !sectorMap[sec] ) sectorMap[sec] = { consumption: 0, loss_share: 0 };
+    sectorMap[sec].consumption += s.consumption || 0;
+    sectorMap[sec].loss_share += s.loss_share || 0;
+  } );
+  var sectorChartData = Object.entries( sectorMap ).map( ( [name, data] ) => ( { name, value: Math.round( data.loss_share ) } ) );
+
+  var sectorChart = echarts.init( document.getElementById( "sectorChart" ) );
+  sectorChart.setOption( {
+    tooltip: { trigger: "item", formatter: '{b}: {c} kWh ({d}%)' },
+    series: [{
+      type: "pie",
+      radius: ["40%", "70%"],
+      data: sectorChartData,
+      label: { formatter: '{b}\n{d}%' }
+    }]
+  } );
+
+  // Subscriber Grid
+  agGrid.createGrid( document.getElementById( "subscriberGrid" ), {
+    columnDefs: [
+      { headerName: "Abone No", field: "subscriber_code", width: 110 },
+      { headerName: "Unvan", field: "name", flex: 1 },
+      { headerName: "Sektör", field: "sector", width: 100 },
+      { headerName: "Tüketim (kWh)", field: "consumption", width: 130, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: "Kayıp Payı", field: "loss_share", width: 120, valueFormatter: p => p.value?.toLocaleString( 'tr-TR', { maximumFractionDigits: 0 } ) + ' kWh', cellStyle: { color: "#EF4444" } },
+      { headerName: "Pay %", field: "share_percent", width: 80, valueFormatter: p => p.value?.toFixed( 2 ) + '%', cellStyle: { fontWeight: "600" } },
+      {
+        headerName: "Durum",
+        width: 90,
+        cellRenderer: p => {
+          var rate = p.data.share_percent || 0;
+          if ( rate > 5 ) return '<span class="badge badge-danger">Yüksek</span>';
+          if ( rate > 3 ) return '<span class="badge badge-warning">Dikkat</span>';
+          return '<span class="badge badge-success">Normal</span>';
+        }
+      }
+    ],
+    rowData: subscriberData,
+    pagination: true,
+    paginationPageSize: 15,
+    localeText: AG_GRID_LOCALE_TR,
+    defaultColDef: { sortable: true, resizable: true }
+  } );
+
+  window.addEventListener( "resize", () => { trendChart.resize(); sectorChart.resize(); } );
+</script>
+{% endblock %}

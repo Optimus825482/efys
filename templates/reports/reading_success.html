@@ -1,0 +1,175 @@
+{% extends 'base.html' %} {% block title %}Okuma Başarısı{% endblock %} {% block
+page_title %}Okuma Başarısı Raporu{% endblock %} {% set breadcrumb = [{'name':
+'Raporlama'}, {'name': 'Okuma Başarısı'}] %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">15,847</div>
+    <div class="kpi-card-label">Toplam Okuma</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">15,623</div>
+    <div class="kpi-card-label">Başarılı</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">224</div>
+    <div class="kpi-card-label">Başarısız</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-primary)">98.6%</div>
+    <div class="kpi-card-label">Başarı Oranı</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Günlük Başarı Trendi</h3>
+    </div>
+    <div class="card-body">
+      <div id="trendChart" style="height: 300px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Hata Nedenleri</h3></div>
+    <div class="card-body">
+      <div id="errorChart" style="height: 300px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Sayaç Bazlı Başarı Oranları</h3>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div
+      id="grid"
+      class="ag-theme-alpine ag-theme-efys"
+      style="height: 350px"
+    ></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data
+  var reportData = {{ report | tojson | safe if report else '{}' }};
+  var trendData = reportData.trend || [];
+  var typeData = reportData.types || [];
+  var gridData = reportData.details || [];
+
+  // Calculate KPIs
+  var totalReadings = gridData.reduce((sum, d) => sum + (d.total_readings || 0), 0);
+  var successfulReadings = gridData.reduce((sum, d) => sum + (d.successful_readings || 0), 0);
+  var failedReadings = gridData.reduce((sum, d) => sum + (d.failed_readings || 0), 0);
+  var successRate = totalReadings > 0 ? (successfulReadings / totalReadings * 100) : 0;
+
+  // Update KPI Cards
+  document.querySelector('.kpi-card:nth-child(1) .kpi-card-value').textContent = totalReadings.toLocaleString('tr-TR');
+  document.querySelector('.kpi-card:nth-child(2) .kpi-card-value').textContent = successfulReadings.toLocaleString('tr-TR');
+  document.querySelector('.kpi-card:nth-child(3) .kpi-card-value').textContent = failedReadings.toLocaleString('tr-TR');
+  document.querySelector('.kpi-card:nth-child(4) .kpi-card-value').textContent = successRate.toFixed(1) + '%';
+
+  var trendChart = echarts.init(document.getElementById("trendChart"));
+  trendChart.setOption({
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: trendData.map(d => d.date), axisLabel: { interval: 0, rotate: 45 } },
+    yAxis: {
+      type: "value",
+      min: 0,
+      max: 100,
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: [
+      {
+        type: "line",
+        data: trendData.map(d => d.success_rate),
+        smooth: true,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: "rgba(16,185,129,0.4)" },
+            { offset: 1, color: "rgba(16,185,129,0.05)" },
+          ]),
+        },
+        lineStyle: { color: "#10B981", width: 2 },
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "10%", containLabel: true },
+  });
+
+  var errorChart = echarts.init(document.getElementById("errorChart"));
+  errorChart.setOption({
+    tooltip: { trigger: "item" },
+    series: [
+      {
+        type: "pie",
+        radius: ["50%", "75%"],
+        data: typeData.length ? typeData.map(t => ({
+            value: t.count,
+            name: t.error_type,
+            // Simple color cycle
+            itemStyle: { color: ['#EF4444', '#F59E0B', '#8B5CF6', '#6B7280'][Math.floor(Math.random()*4)] }
+        })) : [{value: 0, name: 'Veri Yok', itemStyle: {color: '#ccc'}}],
+      },
+    ],
+  });
+
+  agGrid.createGrid(document.getElementById("grid"), {
+    columnDefs: [
+      { headerName: "Sayaç", field: "meter_no", width: 100 },
+      {
+        headerName: "Başarılı",
+        field: "successful_readings",
+        width: 110,
+        valueFormatter: (p) => p.value?.toLocaleString("tr-TR"),
+        cellStyle: { color: "var(--color-success)" },
+      },
+      {
+        headerName: "Başarısız",
+        field: "failed_readings",
+        width: 110,
+        valueFormatter: (p) => p.value?.toLocaleString("tr-TR"),
+        cellStyle: { color: "var(--color-danger)" },
+      },
+      {
+        headerName: "Toplam",
+        field: "total_readings",
+        width: 110,
+        valueFormatter: (p) => p.value?.toLocaleString("tr-TR"),
+      },
+      {
+        headerName: "Başarı Oranı",
+        field: "success_rate",
+        flex: 1,
+        cellRenderer: (p) => {
+          var val = parseFloat(p.value);
+          var color =
+            val >= 98
+              ? "var(--color-success)"
+              : val >= 95
+                ? "var(--color-warning)"
+                : "var(--color-danger)";
+          return (
+            '<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:8px;background:var(--color-bg-hover);border-radius:4px;"><div style="width:' +
+            val +
+            "%;height:100%;background:" +
+            color +
+            ';border-radius:4px;"></div></div><span style="font-weight:600;color:' +
+            color +
+            '">' +
+            val.toFixed(1) +
+            "%</span></div>"
+          );
+        },
+      },
+    ],
+    rowData: gridData,
+    pagination: true,
+    paginationPageSize: 10,
+    localeText: AG_GRID_LOCALE_TR,
+  });
+  window.addEventListener("resize", () => {
+    trendChart.resize();
+    errorChart.resize();
+  });
+</script>
+{% endblock %}

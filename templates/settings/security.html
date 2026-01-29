@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}Güvenlik{% endblock %}
+{% block page_title %}Güvenlik Ayarları{% endblock %}
+{% set breadcrumb = [{'name': 'Ayarlar', 'url': url_for('settings.index')}, {'name': 'Güvenlik'}] %}
+{% block content %}
+
+<!-- Security Implementation Notice -->
+<div class="card" style="border-left: 4px solid var(--color-danger);">
+    <div class="card-body">
+        <div style="display: flex; gap: 16px; align-items: start;">
+            <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-danger-bg);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-danger);
+          font-size: 24px;
+        ">
+                🔒
+            </div>
+            <div style="flex: 1;">
+                <h3 style="font-weight: 600; margin: 0 0 8px 0; color: var(--color-text-primary);">
+                    Güvenlik Sistemi Yapım Aşamasında
+                </h3>
+                <p style="margin: 0 0 12px 0; color: var(--color-text-secondary);">
+                    Bu modül authentication altyapısı tamamlandıktan sonra aktif olacaktır.
+                </p>
+                <div
+                    style="background: var(--color-bg-tertiary); padding: 12px; border-radius: var(--radius-md); font-family: monospace; font-size: 0.875rem;">
+                    <strong>⚠️ KRİTİK: Sistem şu anda authentication olmadan çalışıyor!</strong><br><br>
+                    <strong>Phase 2 Güvenlik Özellikleri:</strong><br>
+                    • Flask-Login entegrasyonu<br>
+                    • Bcrypt password hashing<br>
+                    • Session timeout (configurable)<br>
+                    • CSRF protection (Flask-WTF)<br>
+                    • Rate limiting (Flask-Limiter)<br>
+                    • IP whitelist/blacklist<br>
+                    • 2FA (Two-Factor Authentication)<br>
+                    • Password policy enforcement<br>
+                    • Audit log integration<br><br>
+                    <strong>Veritabanı Tabloları:</strong><br>
+                    • <code>users</code> - password_hash, last_login, failed_attempts<br>
+                    • <code>sessions</code> - active session tracking<br>
+                    • <code>security_events</code> - login attempts, suspicious activity<br>
+                    • <code>ip_whitelist</code> - allowed IP ranges<br>
+                </div>
+                <div style="margin-top: 16px;">
+                    <a href="{{ url_for('settings.index') }}" class="btn btn-primary">Ayarlara Dön</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Planned Security Features Preview -->
+<div class="grid grid-cols-4 gap-4 mt-4">
+    <div class="card">
+        <div class="card-body">
+            <div style="text-align: center; opacity: 0.5;">
+                <div style="font-size: 3rem; margin-bottom: 8px;">🔑</div>
+                <div style="font-weight: 600; margin-bottom: 4px;">Authentication</div>
+                <div style="font-size: 0.875rem; color: var(--color-text-secondary);">Login/Logout sistemi</div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div style="text-align: center; opacity: 0.5;">
+                <div style="font-size: 3rem; margin-bottom: 8px;">⏱️</div>
+                <div style="font-weight: 600; margin-bottom: 4px;">Session Control</div>
+                <div style="font-size: 0.875rem; color: var(--color-text-secondary);">Timeout yönetimi</div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div style="text-align: center; opacity: 0.5;">
+                <div style="font-size: 3rem; margin-bottom: 8px;">🛡️</div>
+                <div style="font-weight: 600; margin-bottom: 4px;">CSRF Protection</div>
+                <div style="font-size: 0.875rem; color: var(--color-text-secondary);">Form güvenliği</div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div style="text-align: center; opacity: 0.5;">
+                <div style="font-size: 3rem; margin-bottom: 8px;">📊</div>
+                <div style="font-weight: 600; margin-bottom: 4px;">Audit Log</div>
+                <div style="font-size: 0.875rem; color: var(--color-text-secondary);">Güvenlik olayları</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Security Status -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title">🔍 Mevcut Güvenlik Durumu</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Özellik</th>
+                    <th>Durum</th>
+                    <th>Notlar</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SQL Injection Protection</td>
+                    <td><span class="badge badge-success">✓ Aktif</span></td>
+                    <td>Psycopg2 parameterized queries kullanılıyor</td>
+                </tr>
+                <tr>
+                    <td>XSS Protection</td>
+                    <td><span class="badge badge-success">✓ Aktif</span></td>
+                    <td>Jinja2 auto-escaping enabled</td>
+                </tr>
+                <tr>
+                    <td>Authentication</td>
+                    <td><span class="badge badge-danger">✗ Yok</span></td>
+                    <td>Phase 2'de eklenecek</td>
+                </tr>
+                <tr>
+                    <td>Authorization (RBAC)</td>
+                    <td><span class="badge badge-danger">✗ Yok</span></td>
+                    <td>Phase 2'de eklenecek</td>
+                </tr>
+                <tr>
+                    <td>CSRF Protection</td>
+                    <td><span class="badge badge-danger">✗ Yok</span></td>
+                    <td>Flask-WTF ile eklenecek</td>
+                </tr>
+                <tr>
+                    <td>Rate Limiting</td>
+                    <td><span class="badge badge-danger">✗ Yok</span></td>
+                    <td>Flask-Limiter ile eklenecek</td>
+                </tr>
+                <tr>
+                    <td>HTTPS/TLS</td>
+                    <td><span class="badge badge-warning">Kısmen</span></td>
+                    <td>Production deployment'ta nginx reverse proxy ile</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

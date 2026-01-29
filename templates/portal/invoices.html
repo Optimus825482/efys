@@ -1,0 +1,158 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Faturalar{% endblock %}
+{% block page_title %}Faturalarım{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl text-green-600">
+                <span class="material-symbols-outlined text-2xl">check_circle</span>
+            </div>
+            <div>
+                <p class="text-sm text-[#617789] dark:text-gray-400">Ödenen</p>
+                <p class="text-2xl font-bold text-[#111518] dark:text-white">{{ invoices|selectattr('display_status',
+                    'equalto',
+                    'paid')|list|length }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl text-amber-600">
+                <span class="material-symbols-outlined text-2xl">schedule</span>
+            </div>
+            <div>
+                <p class="text-sm text-[#617789] dark:text-gray-400">Bekleyen</p>
+                <p class="text-2xl font-bold text-[#111518] dark:text-white">{{ invoices|selectattr('display_status',
+                    'in',
+                    ['issued', 'draft', 'scheduled'])|list|length }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl text-red-600">
+                <span class="material-symbols-outlined text-2xl">warning</span>
+            </div>
+            <div>
+                <p class="text-sm text-[#617789] dark:text-gray-400">İptal</p>
+                <p class="text-2xl font-bold text-[#111518] dark:text-white">{{ invoices|selectattr('display_status',
+                    'equalto',
+                    'cancelled')|list|length }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Table -->
+<div
+    class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] shadow-sm overflow-hidden">
+    <div class="p-6 border-b border-[#e5e7eb] dark:border-[#2a3644]">
+        <h3 class="text-lg font-bold text-[#111518] dark:text-white">Fatura Geçmişi</h3>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-[#f6f7f8] dark:bg-[#101a22]">
+                <tr>
+                    <th
+                        class="px-6 py-4 text-left text-xs font-semibold text-[#617789] dark:text-gray-400 uppercase tracking-wider">
+                        Fatura No</th>
+                    <th
+                        class="px-6 py-4 text-left text-xs font-semibold text-[#617789] dark:text-gray-400 uppercase tracking-wider">
+                        Dönem</th>
+                    <th
+                        class="px-6 py-4 text-left text-xs font-semibold text-[#617789] dark:text-gray-400 uppercase tracking-wider">
+                        Tarih</th>
+                    <th
+                        class="px-6 py-4 text-left text-xs font-semibold text-[#617789] dark:text-gray-400 uppercase tracking-wider">
+                        Son Ödeme</th>
+                    <th
+                        class="px-6 py-4 text-right text-xs font-semibold text-[#617789] dark:text-gray-400 uppercase tracking-wider">
+                        Tutar</th>
+                    <th
+                        class="px-6 py-4 text-center text-xs font-semibold text-[#617789] dark:text-gray-400 uppercase tracking-wider">
+                        Durum</th>
+                    <th
+                        class="px-6 py-4 text-center text-xs font-semibold text-[#617789] dark:text-gray-400 uppercase tracking-wider">
+                        İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#e5e7eb] dark:divide-[#2a3644]">
+                {% if invoices %}
+                {% for invoice in invoices %}
+                <tr class="hover:bg-[#f6f7f8] dark:hover:bg-[#101a22] transition-colors">
+                    <td class="px-6 py-4">
+                        <span class="font-semibold text-[#111518] dark:text-white">{{ invoice.invoice_no }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-[#617789] dark:text-gray-300">{{ invoice.period_name }}</td>
+                    <td class="px-6 py-4 text-[#617789] dark:text-gray-300">{{ invoice.invoice_date.strftime('%d.%m.%Y')
+                        if invoice.invoice_date else '-' }}</td>
+                    <td class="px-6 py-4 text-[#617789] dark:text-gray-300">{{ invoice.due_date.strftime('%d.%m.%Y') if
+                        invoice.due_date else '-' }}</td>
+                    <td class="px-6 py-4 text-right font-bold text-[#111518] dark:text-white">{{
+                        "{:,.2f}".format(invoice.total_amount or 0).replace(",", ".") }} ₺</td>
+                    <td class="px-6 py-4 text-center">
+                        {% if invoice.display_status == 'paid' %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            <span class="size-1.5 rounded-full bg-green-500"></span>
+                            Ödendi
+                        </span>
+                        {% elif invoice.display_status == 'cancelled' %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                            <span class="size-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                            İptal
+                        </span>
+                        {% elif invoice.display_status == 'draft' %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-300">
+                            <span class="size-1.5 rounded-full bg-gray-500"></span>
+                            Taslak
+                        </span>
+                        {% elif invoice.display_status == 'scheduled' %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                            <span class="size-1.5 rounded-full bg-blue-500"></span>
+                            Kesilmedi
+                        </span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                            <span class="size-1.5 rounded-full bg-amber-500"></span>
+                            Kesildi
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button class="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                                title="PDF İndir">
+                                <span class="material-symbols-outlined text-xl">download</span>
+                            </button>
+                            <button
+                                class="p-2 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] transition-colors"
+                                title="Detay">
+                                <span class="material-symbols-outlined text-xl">visibility</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-[#617789] dark:text-gray-400">
+                        <span class="material-symbols-outlined text-4xl mb-2 block opacity-50">receipt_long</span>
+                        Henüz fatura bulunmuyor
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %} {% block title %}Toplu Okuma{% endblock %} {% block
+page_title %}Toplu Okuma{% endblock %} {% set breadcrumb = [{'name': 'Okuma
+İşlemleri', 'url': url_for('readings.index')}, {'name': 'Toplu Okuma'}] %} {%
+block content %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Toplu Okuma Başlat</h3>
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="form-label">Sayaç Grubu</label>
+        <select class="form-select">
+          <option>Tümü (847 sayaç)</option>
+          <option>Sanayi (523 sayaç)</option>
+          <option>Ticarethane (245 sayaç)</option>
+          <option>Mesken (79 sayaç)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Okuma Tipi</label>
+        <select class="form-select">
+          <option>Sadece Endeks</option>
+          <option>Endeks + Yük Profili</option>
+          <option>Detaylı (Tüm Parametreler)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-cta mt-3">Toplu Okuma Başlat</button>
+  </div>
+</div>
+{% endblock %}

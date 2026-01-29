@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Ek Tahakkuk{% endblock %}
+{% block page_title %}Ek Tahakkuk{% endblock %}
+{% set breadcrumb = [{'name': 'Faturalama', 'url': url_for('billing.index')}, {'name': 'Ek Tahakkuk'}] %}
+
+{% block content %}
+<div class="grid grid-cols-3 gap-4">
+    <!-- Sol Panel: Ek Tahakkuk Formu -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Ek Tahakkuk Ekle</h3>
+        </div>
+        <div class="card-body">
+            <form id="additional-form">
+                <div class="form-group">
+                    <label class="form-label">Abone Seç</label>
+                    <select class="form-select" id="subscriber-select" required>
+                        <option value="">Abone Seçin</option>
+                        {% for sub in subscribers %}
+                        <option value="{{ sub.id }}">{{ sub.subscriber_code }} - {{ sub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fatura Seç</label>
+                    <select class="form-select" id="invoice-select" required disabled>
+                        <option value="">Önce abone seçin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tahakkuk Türü</label>
+                    <select class="form-select" id="item-type" required>
+                        <option value="gecikme_cezasi">Gecikme Cezası</option>
+                        <option value="acma_bedeli">Açma Bedeli</option>
+                        <option value="kapama_bedeli">Kapama Bedeli</option>
+                        <option value="sayac_degisim">Sayaç Değişim</option>
+                        <option value="diger">Diğer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tutar (₺)</label>
+                    <input type="number" step="0.01" class="form-input" id="amount" placeholder="0.00" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Açıklama</label>
+                    <textarea class="form-textarea" id="description" rows="3"
+                        placeholder="Tahakkuk açıklaması..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Tahakkuk Ekle
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sağ Panel: Son Faturalar -->
+    <div class="card" style="grid-column: span 2">
+        <div class="card-header">
+            <h3 class="card-title">Son Faturalar</h3>
+            <span style="color: var(--color-text-secondary); font-size: 0.9rem;">{{ invoices | length }} fatura</span>
+        </div>
+        <div class="card-body" style="padding: 0">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Fatura No</th>
+                        <th>Abone</th>
+                        <th>Tarih</th>
+                        <th style="text-align: right;">Tutar</th>
+                        <th>Durum</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                    <tr>
+                        <td><strong>{{ inv.invoice_no }}</strong></td>
+                        <td>{{ inv.subscriber_code }} - {{ inv.subscriber_name }}</td>
+                        <td>{{ inv.invoice_date.strftime('%d.%m.%Y') if inv.invoice_date else '-' }}</td>
+                        <td style="text-align: right;">₺{{ "{:,.2f}".format(inv.total_amount or 0) }}</td>
+                        <td>
+                            <span
+                                class="badge badge-{{ 'success' if inv.status == 'paid' else 'warning' if inv.status == 'issued' else 'secondary' }}">
+                                {{ 'Ödendi' if inv.status == 'paid' else 'Kesildi' if inv.status == 'issued' else
+                                'Taslak' }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm"
+                                onclick="selectInvoice({{ inv.id }}, '{{ inv.invoice_no }}')">
+                                Ek Kalem Ekle
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 32px; color: var(--color-text-secondary);">
+                            Henüz fatura bulunmuyor
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Abone değiştiğinde faturaları yükle
+    document.getElementById( 'subscriber-select' ).addEventListener( 'change', async function () {
+        const subscriberId = this.value;
+        const invoiceSelect = document.getElementById( 'invoice-select' );
+
+        if ( !subscriberId ) {
+            invoiceSelect.innerHTML = '<option value="">Önce abone seçin</option>';
+            invoiceSelect.disabled = true;
+            return;
+        }
+
+        try {
+            const res = await fetch( `/billing/api/invoices/subscriber/${subscriberId}` );
+            const data = await res.json();
+
+            invoiceSelect.disabled = false;
+            invoiceSelect.innerHTML = '<option value="">Fatura Seçin</option>';
+
+            if ( data.success && data.data.length > 0 ) {
+                data.data.forEach( inv => {
+                    invoiceSelect.innerHTML += `<option value="${inv.id}">${inv.invoice_no} - ₺${inv.total_amount?.toLocaleString( 'tr-TR' )}</option>`;
+                } );
+            } else {
+                invoiceSelect.innerHTML = '<option value="">Bu aboneye ait fatura yok</option>';
+            }
+        } catch ( err ) {
+            console.error( err );
+            invoiceSelect.innerHTML = '<option value="">Hata oluştu</option>';
+        }
+    } );
+
+    function selectInvoice( invoiceId, invoiceNo ) {
+        document.getElementById( 'invoice-select' ).innerHTML = `<option value="${invoiceId}" selected>${invoiceNo}</option>`;
+        document.getElementById( 'invoice-select' ).disabled = false;
+        document.querySelector( '.form-input[type="number"]' ).focus();
+    }
+
+    document.getElementById( 'additional-form' ).addEventListener( 'submit', async function ( e ) {
+        e.preventDefault();
+
+        const invoiceId = document.getElementById( 'invoice-select' ).value;
+        const itemType = document.getElementById( 'item-type' ).value;
+        const amount = parseFloat( document.getElementById( 'amount' ).value );
+        const description = document.getElementById( 'description' ).value;
+
+        if ( !invoiceId ) {
+            alert( 'Lütfen bir fatura seçin' );
+            return;
+        }
+
+        try {
+            const res = await fetch( `/billing/api/additional/${invoiceId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify( { item_type: itemType, amount, description } )
+            } );
+
+            const data = await res.json();
+            if ( data.success ) {
+                alert( 'Ek tahakkuk başarıyla eklendi' );
+                location.reload();
+            } else {
+                alert( 'Hata: ' + ( data.error || 'Bilinmeyen hata' ) );
+            }
+        } catch ( err ) {
+            alert( 'İşlem hatası: ' + err.message );
+        }
+    } );
+</script>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends 'base.html' %} {% block title %}Tüketim Raporu{% endblock %} {% block
+page_title %}Tüketim Raporu{% endblock %} {% set breadcrumb = [{'name':
+'Raporlama'}, {'name': 'Tüketim'}] %} {% block content %}
+<form method="GET" action="{{ url_for('reports.consumption') }}" class="card mb-4">
+  <div class="card-body">
+    <div class="grid grid-cols-4 gap-4">
+      <div>
+        <label class="form-label">Başlangıç</label>
+        <input type="date" class="form-input" name="start_date" id="start_date"
+          value="{{ start_date or '2026-01-01' }}" />
+      </div>
+      <div>
+        <label class="form-label">Bitiş</label>
+        <input type="date" class="form-input" name="end_date" id="end_date" value="{{ end_date or '2026-01-29' }}" />
+      </div>
+      <div>
+        <label class="form-label">Sektör</label>
+        <select class="form-select" name="sector" id="sector">
+          <option value="">Tümü</option>
+          {% for sector in sectors %}
+          <option value="{{ sector }}" {{ 'selected' if selected_sector==sector else '' }}>{{ sector }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display: flex; align-items: flex-end">
+        <button type="submit" class="btn btn-primary" style="width: 100%">
+          Rapor Oluştur
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">0</div>
+    <div class="kpi-card-label">Toplam Tüketim (kWh)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">0</div>
+    <div class="kpi-card-label">T1 Tüketim</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)">0</div>
+    <div class="kpi-card-label">T2 Tüketim</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">0</div>
+    <div class="kpi-card-label">T3 Tüketim</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Günlük Tüketim Trendi</h3>
+    </div>
+    <div class="card-body">
+      <div id="trendChart" style="height: 300px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Sektörel Dağılım</h3>
+    </div>
+    <div class="card-body">
+      <div id="sectorChart" style="height: 300px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Detaylı Tüketim</h3>
+    <button class="grid-export-btn" onclick="exp()">Excel</button>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="grid" class="ag-theme-alpine ag-theme-efys" style="height: 400px"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Jinja data injection
+  var reportData = {{ report | tojson | safe if report else '{}' }};
+  var dailyData = reportData.daily || [];
+  var sectorData = reportData.sectors || [];
+  var gridData = reportData.details || [];
+
+  // KPI Calculations
+  var totalConsumption = gridData.reduce( ( sum, d ) => sum + ( d.total || 0 ), 0 );
+  var totalT1 = gridData.reduce( ( sum, d ) => sum + ( d.t1 || 0 ), 0 );
+  var totalT2 = gridData.reduce( ( sum, d ) => sum + ( d.t2 || 0 ), 0 );
+  var totalT3 = gridData.reduce( ( sum, d ) => sum + ( d.t3 || 0 ), 0 );
+
+  // Update KPI Cards
+  document.querySelector( '.kpi-card:nth-child(1) .kpi-card-value' ).textContent = totalConsumption.toLocaleString( 'tr-TR', { maximumFractionDigits: 0 } );
+  document.querySelector( '.kpi-card:nth-child(2) .kpi-card-value' ).textContent = totalT1.toLocaleString( 'tr-TR', { maximumFractionDigits: 0 } );
+  document.querySelector( '.kpi-card:nth-child(3) .kpi-card-value' ).textContent = totalT2.toLocaleString( 'tr-TR', { maximumFractionDigits: 0 } );
+  document.querySelector( '.kpi-card:nth-child(4) .kpi-card-value' ).textContent = totalT3.toLocaleString( 'tr-TR', { maximumFractionDigits: 0 } );
+
+  // Trend Chart
+  var trendChart = echarts.init( document.getElementById( "trendChart" ) );
+  trendChart.setOption( {
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    xAxis: { type: "category", data: dailyData.map( d => d.tarih ) },
+    yAxis: {
+      type: "value",
+      axisLabel: { formatter: ( v ) => ( v / 1000 ).toFixed( 0 ) + "K" },
+    },
+    series: [
+      {
+        name: "Toplam Tüketim",
+        type: "line",
+        data: dailyData.map( d => d.consumption ),
+        smooth: true,
+        lineStyle: { color: "#2563EB" },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient( 0, 0, 0, 1, [
+            { offset: 0, color: "rgba(37, 99, 235, 0.5)" },
+            { offset: 1, color: "rgba(37, 99, 235, 0.1)" }
+          ] )
+        }
+      }
+    ],
+    grid: { left: "3%", right: "4%", bottom: "15%", containLabel: true },
+  } );
+
+  // Sector Chart
+  var sectorChart = echarts.init( document.getElementById( "sectorChart" ) );
+  sectorChart.setOption( {
+    tooltip: { trigger: "item" },
+    series: [
+      {
+        type: "pie",
+        radius: ["40%", "70%"],
+        data: sectorData.map( s => ( { value: s.consumption, name: s.sector } ) ),
+      },
+    ],
+  } );
+
+  // Grid
+  var grid = agGrid.createGrid( document.getElementById( "grid" ), {
+    columnDefs: [
+      { headerName: "Abone No", field: "subscriber_code", width: 120 },
+      { headerName: "Unvan", field: "name", flex: 1 },
+      { headerName: "Sektör", field: "sector", width: 120 },
+      {
+        headerName: "T1",
+        field: "t1",
+        width: 100,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "T2",
+        field: "t2",
+        width: 100,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "T3",
+        field: "t3",
+        width: 100,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "Toplam",
+        field: "total",
+        width: 120,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+        cellStyle: { fontWeight: "600" },
+      },
+    ],
+    rowData: gridData,
+    pagination: true,
+    paginationPageSize: 10,
+    localeText: AG_GRID_LOCALE_TR,
+  } );
+
+  function exp() {
+    grid.exportDataAsExcel( { fileName: "tuketim_raporu.xlsx" } );
+  }
+
+  window.addEventListener( "resize", () => {
+    trendChart.resize();
+    sectorChart.resize();
+  } );
+</script>
+{% endblock %}

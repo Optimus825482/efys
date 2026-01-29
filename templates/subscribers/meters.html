@@ -1,0 +1,59 @@
+{% extends 'base.html' %} {% block title %}Sayaç Tanımlama{% endblock %} {%
+block page_title %}Sayaç Tanımlama{% endblock %} {% set breadcrumb = [{'name':
+'Aboneler', 'url': url_for('subscribers.index')}, {'name': 'Sayaç'}] %} {% block
+content %}
+<div class="flex justify-between items-center mb-4">
+  <div>
+    <h2 style="color: var(--color-text-primary); font-weight: 600">
+      Sayaç Yönetimi
+    </h2>
+  </div>
+  <button class="btn btn-primary">Yeni Sayaç Ekle</button>
+</div>
+<div class="card">
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sayaç No</th>
+          <th>Marka</th>
+          <th>Model</th>
+          <th>IP/Port</th>
+          <th>Abone</th>
+          <th>Durum</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600">M-2847</td>
+          <td>Köhler</td>
+          <td>AEL-MT371</td>
+          <td>192.168.1.101:4059</td>
+          <td>ABC Tekstil</td>
+          <td><span class="badge badge-success">Çevrimiçi</span></td>
+          <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">M-3456</td>
+          <td>Makel</td>
+          <td>MAK-500</td>
+          <td>192.168.1.102:4059</td>
+          <td>XYZ Otomotiv</td>
+          <td><span class="badge badge-success">Çevrimiçi</span></td>
+          <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">M-1234</td>
+          <td>Luna</td>
+          <td>L-200</td>
+          <td>192.168.1.103:4059</td>
+          <td>Merkez Mağaza</td>
+          <td><span class="badge badge-danger">Çevrimdışı</span></td>
+          <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

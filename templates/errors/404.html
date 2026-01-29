@@ -1,0 +1,21 @@
+{% extends 'base.html' %} {% block title %}404 - Sayfa Bulunamadı{% endblock %}
+{% block page_title %}Sayfa Bulunamadı{% endblock %} {% block content %}
+<div class="card" style="text-align: center; padding: 48px">
+  <div
+    style="
+      font-size: 6rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 16px;
+    "
+  >
+    404
+  </div>
+  <h2 style="margin-bottom: 8px">Aradığınız sayfa bulunamadı</h2>
+  <p style="color: var(--color-text-secondary); margin-bottom: 24px">
+    Sayfa silinmiş veya taşınmış olabilir.
+  </p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary"
+    >Dashboard'a Dön</a
+  >
+</div>
+{% endblock %}

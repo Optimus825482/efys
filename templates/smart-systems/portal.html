@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Abone Portalı{% endblock %}
+{% block page_title %}Abone Portalı Yönetimi{% endblock %}
+{% set breadcrumb = [{'name': 'Akıllı Sistemler', 'url': url_for('smart.index')}, {'name': 'Abone Portalı'}] %}
+{% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+    <div class="kpi-card">
+        <div class="kpi-card-value">{{ total_subscribers }}</div>
+        <div class="kpi-card-label">Toplam Abone</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">{{ portal_active }}</div>
+        <div class="kpi-card-label">Portal Aktif</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">{{ monthly_logins }}</div>
+        <div class="kpi-card-label">Bu Ay Giriş</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">{{ satisfaction }}%</div>
+        <div class="kpi-card-label">Memnuniyet</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+    <!-- Portal Önizleme -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📱 Portal Önizleme</h3>
+        </div>
+        <div class="card-body">
+            <div style="border: 2px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden;">
+                <div style="background: var(--color-primary); color: white; padding: 16px; text-align: center;">
+                    <div style="font-size: 1.25rem; font-weight: 700;">EFYS Abone Portalı</div>
+                    <div style="font-size: 0.875rem; opacity: 0.8;">Gönen OSB</div>
+                </div>
+                <div style="padding: 16px; background: var(--color-bg-page);">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+                        <div
+                            style="background: white; padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-primary);">45,230</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-secondary);">Bu Ay Tüketim (kWh)
+                            </div>
+                        </div>
+                        <div
+                            style="background: white; padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-success);">₺12,450</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-secondary);">Tahmini Fatura</div>
+                        </div>
+                    </div>
+                    <div
+                        style="background: white; padding: 12px; border-radius: var(--radius-md); margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">📊 Tüketim Grafiği</span>
+                            <span style="color: var(--color-primary);">→</span>
+                        </div>
+                    </div>
+                    <div
+                        style="background: white; padding: 12px; border-radius: var(--radius-md); margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">📄 Faturalarım</span>
+                            <span style="color: var(--color-primary);">→</span>
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: var(--radius-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">⚡ Anlık Tüketim</span>
+                            <span style="color: var(--color-primary);">→</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portal İstatistikleri -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📈 Portal Kullanım İstatistikleri</h3>
+        </div>
+        <div class="card-body">
+            <div id="usageChart" style="height: 300px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Abone Listesi -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">👥 Portal Kullanıcıları</h3>
+    </div>
+    <div class="card-body">
+        <div id="usersGrid" style="height: 350px;" class="ag-theme-alpine"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Usage Chart
+    var usageChart = echarts.init( document.getElementById( 'usageChart' ) );
+    usageChart.setOption( {
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] },
+        yAxis: { type: 'value', name: 'Giriş Sayısı' },
+        series: [{
+            name: 'Portal Girişleri',
+            type: 'bar',
+            data: [28, 32, 25, 38, 42, 15, 8],
+            itemStyle: { color: '#3B82F6' }
+        }],
+        grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true }
+    } );
+
+    // Users Grid
+    var gridOptions = {
+        columnDefs: [
+            { field: 'subscriber_code', headerName: 'Abone No', width: 120 },
+            { field: 'name', headerName: 'Firma Adı', flex: 1 },
+            {
+                field: 'portal_status', headerName: 'Portal Durumu', width: 130,
+                cellRenderer: params => {
+                    var color = params.value === 'Aktif' ? '#10B981' : '#9CA3AF';
+                    return `<span style="color: ${color}; font-weight: bold;">● ${params.value}</span>`;
+                }
+            },
+            { field: 'last_login', headerName: 'Son Giriş', width: 150 },
+            { field: 'login_count', headerName: 'Toplam Giriş', width: 120, type: 'numericColumn' },
+            {
+                field: 'actions', headerName: 'İşlemler', width: 150,
+                cellRenderer: () => '<button class="btn btn-sm btn-outline-primary">Yönet</button>'
+            }
+        ],
+        rowData: {{ portal_users | tojson }},
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+    localeText: AG_GRID_LOCALE_TR
+    };
+
+    agGrid.createGrid( document.getElementById( 'usersGrid' ), gridOptions );
+
+    window.addEventListener( 'resize', () => usageChart.resize() );
+</script>
+{% endblock %}

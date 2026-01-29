@@ -1,0 +1,448 @@
+{% extends 'base.html' %}
+{% block title %}Fatura Hesapla{% endblock %}
+{% block page_title %}Fatura Hesaplama{% endblock %}
+{% set breadcrumb = [{'name': 'Faturalama', 'url': url_for('billing.index')}, {'name': 'Hesapla'}] %}
+
+{% block content %}
+<div class="grid grid-cols-3 gap-4">
+    <!-- Sol Panel: Hesaplama Parametreleri -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Hesaplama Parametreleri</h3>
+        </div>
+        <div class="card-body">
+            <form id="calculate-form">
+                <div class="form-group">
+                    <label class="form-label">Dönem</label>
+                    <select class="form-select" id="period-select" name="period_id" required>
+                        <option value="">Dönem Seçin</option>
+                        {% for period in periods %}
+                        <option value="{{ period.id }}">
+                            {{ period.period_name if period.period_name else (period.period_start.strftime('%B %Y') if
+                            period.period_start else 'Dönem ' ~ period.id) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Abone</label>
+                    <select class="form-select" id="subscriber-select" name="subscriber_id" required>
+                        <option value="">Tümü (Toplu Hesaplama)</option>
+                        {% for sub in subscribers %}
+                        <option value="{{ sub.id }}">{{ sub.subscriber_code }} - {{ sub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tarife</label>
+                    <select class="form-select" id="tariff-select" name="tariff_id">
+                        <option value="">Aboneye Tanımlı Tarife</option>
+                        {% for tariff in tariffs %}
+                        <option value="{{ tariff.id }}">{{ tariff.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%" id="calculate-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="2" width="16" height="20" rx="2" />
+                        <line x1="8" y1="6" x2="16" y2="6" />
+                        <line x1="8" y1="10" x2="16" y2="10" />
+                        <line x1="8" y1="14" x2="12" y2="14" />
+                    </svg>
+                    Hesapla
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sağ Panel: Hesaplama Sonucu -->
+    <div class="card" style="grid-column: span 2">
+        <div class="card-header">
+            <h3 class="card-title">Hesaplama Sonucu</h3>
+            <span id="subscriber-info" style="color: var(--color-text-secondary); font-size: 0.9rem;"></span>
+        </div>
+        <div class="card-body">
+            <!-- Sonuç Bekleniyor -->
+            <div id="result-empty" style="text-align: center; padding: 48px 20px; color: var(--color-text-secondary);">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    style="margin: 0 auto 16px; opacity: 0.5;">
+                    <rect x="4" y="2" width="16" height="20" rx="2" />
+                    <line x1="8" y1="6" x2="16" y2="6" />
+                    <line x1="8" y1="10" x2="16" y2="10" />
+                    <line x1="8" y1="14" x2="12" y2="14" />
+                </svg>
+                <p style="font-weight: 500; margin-bottom: 8px;">Hesaplama Bekliyor</p>
+                <p style="font-size: 0.9rem;">Dönem ve abone seçerek hesaplama yapın</p>
+            </div>
+
+            <!-- Sonuç Alanı (gizli başlar) -->
+            <div id="result-container" style="display: none;">
+                <!-- KPI Kartları -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="kpi-card">
+                        <div class="kpi-card-value" id="kpi-consumption">0 kWh</div>
+                        <div class="kpi-card-label">Toplam Tüketim</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-card-value" id="kpi-demand" style="color: var(--color-warning)">0 kW</div>
+                        <div class="kpi-card-label">Max Demand</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-card-value" id="kpi-total" style="color: var(--color-primary)">₺0</div>
+                        <div class="kpi-card-label">Toplam Tutar</div>
+                    </div>
+                </div>
+
+                <!-- Detay Tablosu -->
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Kalem</th>
+                            <th style="text-align: right;">Miktar</th>
+                            <th style="text-align: right;">Birim Fiyat</th>
+                            <th style="text-align: right;">Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-tbody">
+                        <!-- JavaScript ile doldurulacak -->
+                    </tbody>
+                </table>
+
+                <!-- Aksiyon Butonları -->
+                <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="previewPDF()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <path d="M14 2v6h6" />
+                        </svg>
+                        PDF Önizle
+                    </button>
+                    <button class="btn btn-primary" onclick="createInvoice()" id="create-invoice-btn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        Fatura Oluştur
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="result-loading" style="display: none; text-align: center; padding: 48px 20px;">
+                <div style="font-size: 2rem; animation: spin 1s linear infinite;">⟳</div>
+                <p style="margin-top: 16px; color: var(--color-text-secondary);">Hesaplanıyor...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toplu Hesaplama Sonuçları (ayrı bir section) -->
+<div id="bulk-results" class="card mt-4" style="display: none;">
+    <div class="card-header">
+        <h3 class="card-title">Toplu Hesaplama Sonuçları</h3>
+        <button class="btn btn-primary" onclick="createBulkInvoices()" id="create-bulk-btn">
+            Tüm Faturaları Oluştur
+        </button>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Abone Kodu</th>
+                    <th>Abone Adı</th>
+                    <th style="text-align: right;">T1 (kWh)</th>
+                    <th style="text-align: right;">T2 (kWh)</th>
+                    <th style="text-align: right;">T3 (kWh)</th>
+                    <th style="text-align: right;">Toplam</th>
+                    <th style="text-align: right;">Tutar</th>
+                    <th>Durum</th>
+                </tr>
+            </thead>
+            <tbody id="bulk-tbody">
+                <!-- JavaScript ile doldurulacak -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentResult = null;
+    let bulkResults = [];
+
+    document.getElementById( 'calculate-form' ).addEventListener( 'submit', async function ( e ) {
+        e.preventDefault();
+
+        const periodId = document.getElementById( 'period-select' ).value;
+        const subscriberId = document.getElementById( 'subscriber-select' ).value;
+        const tariffId = document.getElementById( 'tariff-select' ).value;
+
+        if ( !periodId ) {
+            alert( 'Lütfen bir dönem seçin' );
+            return;
+        }
+
+        // UI state
+        document.getElementById( 'result-empty' ).style.display = 'none';
+        document.getElementById( 'result-container' ).style.display = 'none';
+        document.getElementById( 'result-loading' ).style.display = 'block';
+        document.getElementById( 'bulk-results' ).style.display = 'none';
+
+        try {
+            const params = new URLSearchParams( { period_id: periodId } );
+            if ( subscriberId ) params.append( 'subscriber_id', subscriberId );
+            if ( tariffId ) params.append( 'tariff_id', tariffId );
+
+            const res = await fetch( `/billing/api/calculate?${params}` );
+            const data = await res.json();
+
+            document.getElementById( 'result-loading' ).style.display = 'none';
+
+            if ( !data.success ) {
+                alert( 'Hesaplama hatası: ' + ( data.error || 'Bilinmeyen hata' ) );
+                document.getElementById( 'result-empty' ).style.display = 'block';
+                return;
+            }
+
+            if ( subscriberId ) {
+                // Tekil hesaplama
+                displaySingleResult( data.data );
+            } else {
+                // Toplu hesaplama
+                displayBulkResults( data.data );
+            }
+
+        } catch ( err ) {
+            console.error( err );
+            alert( 'Hesaplama hatası: ' + err.message );
+            document.getElementById( 'result-loading' ).style.display = 'none';
+            document.getElementById( 'result-empty' ).style.display = 'block';
+        }
+    } );
+
+    function displaySingleResult( result ) {
+        currentResult = result;
+
+        document.getElementById( 'result-container' ).style.display = 'block';
+        document.getElementById( 'subscriber-info' ).textContent =
+            `${result.subscriber_code} - ${result.subscriber_name}`;
+
+        // KPI'lar
+        const totalConsumption = ( result.t1_consumption || 0 ) + ( result.t2_consumption || 0 ) + ( result.t3_consumption || 0 );
+        document.getElementById( 'kpi-consumption' ).textContent = formatNumber( totalConsumption ) + ' kWh';
+        document.getElementById( 'kpi-demand' ).textContent = formatNumber( result.max_demand || 0 ) + ' kW';
+        document.getElementById( 'kpi-total' ).textContent = formatCurrency( result.total_amount || 0 );
+
+        // Tablo
+        const tbody = document.getElementById( 'result-tbody' );
+        tbody.innerHTML = '';
+
+        const rows = [
+            { label: 'T1 Tüketim (Gündüz)', qty: result.t1_consumption, rate: result.t1_rate, amount: result.t1_amount },
+            { label: 'T2 Tüketim (Puant)', qty: result.t2_consumption, rate: result.t2_rate, amount: result.t2_amount },
+            { label: 'T3 Tüketim (Gece)', qty: result.t3_consumption, rate: result.t3_rate, amount: result.t3_amount },
+            { label: 'Dağıtım Bedeli', qty: totalConsumption, rate: result.distribution_rate, amount: result.distribution_amount },
+        ];
+
+        rows.forEach( row => {
+            if ( row.qty || row.amount ) {
+                tbody.innerHTML += `
+                <tr>
+                    <td>${row.label}</td>
+                    <td style="text-align: right;">${formatNumber( row.qty || 0 )} kWh</td>
+                    <td style="text-align: right;">₺${formatNumber( row.rate || 0, 4 )}</td>
+                    <td style="text-align: right;">${formatCurrency( row.amount || 0 )}</td>
+                </tr>
+            `;
+            }
+        } );
+
+        // Ara toplam
+        tbody.innerHTML += `
+        <tr style="font-weight: 600; background: var(--color-bg-page);">
+            <td>Ara Toplam</td>
+            <td></td>
+            <td></td>
+            <td style="text-align: right;">${formatCurrency( result.subtotal || 0 )}</td>
+        </tr>
+    `;
+
+        // Reaktif ceza
+        if ( result.reactive_penalty > 0 ) {
+            tbody.innerHTML += `
+            <tr>
+                <td>Reaktif Enerji Cezası</td>
+                <td style="text-align: right;">${formatNumber( result.reactive_amount || 0 )} kVArh</td>
+                <td style="text-align: right;">Cos φ: ${( result.cos_phi || 0 ).toFixed( 3 )}</td>
+                <td style="text-align: right; color: var(--color-danger);">${formatCurrency( result.reactive_penalty || 0 )}</td>
+            </tr>
+        `;
+        } else {
+            tbody.innerHTML += `
+            <tr>
+                <td>Reaktif Ceza</td>
+                <td style="text-align: right;">-</td>
+                <td style="text-align: right;">Cos φ ≥ 0.90</td>
+                <td style="text-align: right; color: var(--color-success);">₺0,00</td>
+            </tr>
+        `;
+        }
+
+        // Vergiler
+        tbody.innerHTML += `
+        <tr>
+            <td>ÖTV (%5)</td>
+            <td></td>
+            <td></td>
+            <td style="text-align: right;">${formatCurrency( result.otv_amount || 0 )}</td>
+        </tr>
+        <tr>
+            <td>KDV (%20)</td>
+            <td></td>
+            <td></td>
+            <td style="text-align: right;">${formatCurrency( result.kdv_amount || 0 )}</td>
+        </tr>
+        <tr style="font-weight: 700; font-size: 1.1rem;">
+            <td>Genel Toplam</td>
+            <td></td>
+            <td></td>
+            <td style="text-align: right; color: var(--color-primary);">${formatCurrency( result.total_amount || 0 )}</td>
+        </tr>
+    `;
+
+        document.getElementById( 'create-invoice-btn' ).disabled = false;
+    }
+
+    function displayBulkResults( results ) {
+        bulkResults = results;
+
+        document.getElementById( 'result-empty' ).style.display = 'none';
+        document.getElementById( 'bulk-results' ).style.display = 'block';
+
+        const tbody = document.getElementById( 'bulk-tbody' );
+        tbody.innerHTML = '';
+
+        let totalAmount = 0;
+
+        results.forEach( r => {
+            const total = ( r.t1_consumption || 0 ) + ( r.t2_consumption || 0 ) + ( r.t3_consumption || 0 );
+            totalAmount += r.total_amount || 0;
+
+            tbody.innerHTML += `
+            <tr>
+                <td><strong>${r.subscriber_code}</strong></td>
+                <td>${r.subscriber_name}</td>
+                <td style="text-align: right;">${formatNumber( r.t1_consumption || 0 )}</td>
+                <td style="text-align: right;">${formatNumber( r.t2_consumption || 0 )}</td>
+                <td style="text-align: right;">${formatNumber( r.t3_consumption || 0 )}</td>
+                <td style="text-align: right;"><strong>${formatNumber( total )}</strong></td>
+                <td style="text-align: right;">${formatCurrency( r.total_amount || 0 )}</td>
+                <td><span class="badge badge-${r.status === 'ok' ? 'success' : 'warning'}">${r.status === 'ok' ? 'Hazır' : 'Eksik Veri'}</span></td>
+            </tr>
+        `;
+        } );
+
+        // Toplam satır
+        tbody.innerHTML += `
+        <tr style="font-weight: 700; background: var(--color-bg-page);">
+            <td colspan="6">TOPLAM (${results.length} abone)</td>
+            <td style="text-align: right;">${formatCurrency( totalAmount )}</td>
+            <td></td>
+        </tr>
+    `;
+    }
+
+    function formatNumber( num, decimals = 0 ) {
+        return new Intl.NumberFormat( 'tr-TR', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        } ).format( num || 0 );
+    }
+
+    function formatCurrency( amount ) {
+        return new Intl.NumberFormat( 'tr-TR', {
+            style: 'currency',
+            currency: 'TRY'
+        } ).format( amount || 0 );
+    }
+
+    function previewPDF() {
+        if ( !currentResult ) return;
+        window.open( `/billing/preview/${currentResult.subscriber_id}/${currentResult.period_id}`, '_blank' );
+    }
+
+    async function createInvoice() {
+        if ( !currentResult ) return;
+
+        if ( !confirm( 'Bu abone için fatura oluşturulsun mu?' ) ) return;
+
+        try {
+            const res = await fetch( '/billing/api/create-invoice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify( {
+                    subscriber_id: currentResult.subscriber_id,
+                    period_id: currentResult.period_id
+                } )
+            } );
+
+            const data = await res.json();
+            if ( data.success ) {
+                alert( 'Fatura başarıyla oluşturuldu: ' + data.invoice_no );
+                document.getElementById( 'create-invoice-btn' ).disabled = true;
+            } else {
+                alert( 'Hata: ' + ( data.error || 'Bilinmeyen hata' ) );
+            }
+        } catch ( err ) {
+            alert( 'Fatura oluşturma hatası: ' + err.message );
+        }
+    }
+
+    async function createBulkInvoices() {
+        if ( !bulkResults.length ) return;
+
+        const validResults = bulkResults.filter( r => r.status === 'ok' );
+        if ( !validResults.length ) {
+            alert( 'Fatura oluşturulabilecek abone bulunamadı' );
+            return;
+        }
+
+        if ( !confirm( `${validResults.length} abone için fatura oluşturulsun mu?` ) ) return;
+
+        try {
+            const res = await fetch( '/billing/api/create-bulk-invoices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify( {
+                    period_id: document.getElementById( 'period-select' ).value,
+                    subscriber_ids: validResults.map( r => r.subscriber_id )
+                } )
+            } );
+
+            const data = await res.json();
+            if ( data.success ) {
+                alert( `${data.created} fatura başarıyla oluşturuldu` );
+                document.getElementById( 'create-bulk-btn' ).disabled = true;
+            } else {
+                alert( 'Hata: ' + ( data.error || 'Bilinmeyen hata' ) );
+            }
+        } catch ( err ) {
+            alert( 'Toplu fatura oluşturma hatası: ' + err.message );
+        }
+    }
+</script>
+{% endblock %}

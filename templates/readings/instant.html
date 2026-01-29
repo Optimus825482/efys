@@ -1,0 +1,302 @@
+{% extends 'base.html' %} {% block title %}Anlık Okuma{% endblock %} {% block
+page_title %}Anlık Okuma{% endblock %} {% set breadcrumb = [{'name': 'Okuma
+İşlemleri', 'url': '#'}, {'name': 'Anlık Okuma'}] %} {% block content %}
+<!-- Live Status Header -->
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-icon primary">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="kpi-online">
+      {{ stats.total if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Çevrimiçi Sayaç</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-icon success">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="kpi-success" style="color: var(--color-success)">
+      {{ stats.success_rate if stats else 0 }}%
+    </div>
+    <div class="kpi-card-label">Başarı Oranı</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-icon warning">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="kpi-pending" style="color: var(--color-warning)">
+      {{ stats.pending if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Bekleyen</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-icon danger">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="15" y1="9" x2="9" y2="15" />
+        <line x1="9" y1="9" x2="15" y2="15" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="kpi-failed" style="color: var(--color-danger)">
+      {{ stats.failed if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Başarısız</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-4">
+  <!-- Live Reading Panel -->
+  <div class="card" style="grid-column: span 2">
+    <div class="card-header">
+      <h3 class="card-title">
+        <span class="status-dot live online" style="margin-right: 8px"></span>
+        Canlı Okuma Akışı
+      </h3>
+      <div style="display: flex; gap: 8px">
+        <button class="btn btn-primary" onclick="startReading()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          Okuma Başlat
+        </button>
+        <button class="btn btn-secondary" onclick="stopReading()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="6" y="4" width="4" height="16" />
+            <rect x="14" y="4" width="4" height="16" />
+          </svg>
+          Durdur
+        </button>
+      </div>
+    </div>
+    <div class="card-body" style="padding: 0">
+      <div id="liveReadingsGrid" class="ag-theme-alpine ag-theme-efys" style="height: 400px; width: 100%"></div>
+    </div>
+  </div>
+
+  <!-- Real-time Chart -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Anlık Güç (kW)</h3>
+    </div>
+    <div class="card-body">
+      <div id="powerChart" class="echart-container" style="height: 340px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Reading History -->
+<div class="card mt-4">
+  <div class="card-header">
+    <h3 class="card-title">Son Okumalar</h3>
+    <div style="display: flex; gap: 8px">
+      <input type="text" id="historySearch" class="grid-search" placeholder="Sayaç ara..." onkeyup="filterHistory()" />
+      <button class="grid-export-btn" onclick="exportHistory()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Dışa Aktar
+      </button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="historyGrid" class="ag-theme-alpine ag-theme-efys" style="height: 350px; width: 100%"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  var readings = {{ readings | tojson | safe if readings else '[]' }};
+  var now = new Date();
+  var liveData = readings
+    .filter( r => r.reading_time && new Date( r.reading_time ) <= now )
+    .map( r => ( {
+      meter: r.meter_no,
+      subscriber: r.subscriber_name,
+      t1: r.t1_index,
+      t2: r.t2_index,
+      t3: r.t3_index,
+      power: r.power_kw,
+      pf: r.cos_phi,
+      status: r.status,
+      time: r.reading_time
+    } ) );
+
+  // Live Readings Grid
+  var liveGridOptions = {
+    columnDefs: [
+      { headerName: 'Sayaç', field: 'meter', width: 100 },
+      { headerName: 'Abone', field: 'subscriber', flex: 1 },
+      { headerName: 'T1 (kWh)', field: 't1', width: 110, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: 'T2 (kWh)', field: 't2', width: 110, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: 'T3 (kWh)', field: 't3', width: 110, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: 'Güç (kW)', field: 'power', width: 100, cellStyle: { fontWeight: '600', color: 'var(--color-primary)' } },
+      {
+        headerName: 'Cos φ', field: 'pf', width: 80,
+        cellRenderer: p => {
+          var color = p.value >= 0.9 ? 'var(--color-success)' : 'var(--color-danger)';
+          return '<span style="color:' + color + '">' + p.value.toFixed( 2 ) + '</span>';
+        }
+      },
+      {
+        headerName: 'Durum', field: 'status', width: 90,
+        cellRenderer: p => '<span class="badge badge-success">' + p.value + '</span>'
+      },
+      { headerName: 'Zaman', field: 'time', width: 140, valueFormatter: p => p.value ? new Date( p.value ).toLocaleTimeString( 'tr-TR' ) : '-' }
+    ],
+    rowData: liveData,
+    defaultColDef: { sortable: true, resizable: true },
+    animateRows: true,
+    localeText: AG_GRID_LOCALE_TR
+  };
+
+  var liveGrid = agGrid.createGrid( document.getElementById( 'liveReadingsGrid' ), liveGridOptions );
+
+  // Power Chart
+  var powerChart = echarts.init( document.getElementById( 'powerChart' ) );
+  var powerData = liveData.slice( 0, 20 ).map( d => d.power || 0 ).reverse();
+  var timeLabels = liveData.slice( 0, 20 ).map( d => {
+    var t = new Date( d.time );
+    return isNaN( t.getTime() ) ? '-' : t.toLocaleTimeString( 'tr-TR', { hour: '2-digit', minute: '2-digit' } );
+  } ).reverse();
+
+  powerChart.setOption( {
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: timeLabels, axisLabel: { fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { formatter: '{value} kW' } },
+    series: [{
+      type: 'line',
+      data: powerData,
+      smooth: true,
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient( 0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(37, 99, 235, 0.3)' },
+          { offset: 1, color: 'rgba(37, 99, 235, 0.05)' }
+        ] )
+      },
+      lineStyle: { color: '#2563EB', width: 2 },
+      itemStyle: { color: '#2563EB' }
+    }],
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true }
+  } );
+
+  // History Grid
+  var historyData = readings
+    .filter( r => r.reading_time && new Date( r.reading_time ) <= now )
+    .map( r => ( {
+      meter_no: r.meter_no,
+      subscriber_name: r.subscriber_name,
+      t1_index: r.t1_index,
+      t2_index: r.t2_index,
+      t3_index: r.t3_index,
+      cos_phi: r.cos_phi,
+      power_factor: r.cos_phi,
+      reading_time: r.reading_time
+    } ) );
+
+  var historyGridOptions = {
+    columnDefs: [
+      { headerName: 'Sayaç', field: 'meter_no', width: 100 },
+      { headerName: 'Abone', field: 'subscriber_name', flex: 1 },
+      { headerName: 'T1', field: 't1_index', width: 100, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: 'T2', field: 't2_index', width: 100, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: 'T3', field: 't3_index', width: 100, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: 'Toplam', width: 110, valueGetter: p => ( p.data.t1_index || 0 ) + ( p.data.t2_index || 0 ) + ( p.data.t3_index || 0 ), valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) },
+      { headerName: 'Cos φ', field: 'power_factor', width: 80, valueGetter: p => p.data.cos_phi || p.data.power_factor || p.data.pf },
+      { headerName: 'Tarih', field: 'reading_time', width: 150, valueFormatter: p => p.value ? new Date( p.value ).toLocaleString( 'tr-TR' ) : '-' }
+    ],
+    rowData: historyData,
+    pagination: true,
+    paginationPageSize: 10,
+    localeText: AG_GRID_LOCALE_TR
+  };
+
+  var historyGrid = agGrid.createGrid( document.getElementById( 'historyGrid' ), historyGridOptions );
+
+  function filterHistory() {
+    historyGrid.setGridOption( 'quickFilterText', document.getElementById( 'historySearch' ).value );
+  }
+
+  function exportHistory() {
+    historyGrid.api?.exportDataAsCsv( { fileName: 'okumalar_' + new Date().toISOString().split( 'T' )[0] + '.csv' } );
+  }
+
+  var readingTimer = null;
+
+  function mapApiData( data ) {
+    var now = new Date();
+    return ( data || [] )
+      .filter( r => r.reading_time && new Date( r.reading_time ) <= now )
+      .map( r => ( {
+        meter: r.meter_no,
+        subscriber: r.subscriber_name,
+        t1: r.t1_index,
+        t2: r.t2_index,
+        t3: r.t3_index,
+        power: r.power_kw,
+        pf: r.cos_phi,
+        status: r.status,
+        time: r.reading_time
+      } ) );
+  }
+
+  function refreshLiveData() {
+    fetch( '{{ url_for('readings.api_instant') }}' )
+      .then( r => r.json() )
+      .then( r => {
+        if ( !r.success ) return;
+        liveData = mapApiData( r.data );
+        liveGrid.setGridOption( 'rowData', liveData );
+
+        powerData = liveData.slice( 0, 20 ).map( d => d.power || 0 ).reverse();
+        timeLabels = liveData.slice( 0, 20 ).map( d => {
+          var t = new Date( d.time );
+          return isNaN( t.getTime() ) ? '-' : t.toLocaleTimeString( 'tr-TR', { hour: '2-digit', minute: '2-digit' } );
+        } ).reverse();
+
+        powerChart.setOption( {
+          xAxis: { data: timeLabels },
+          series: [{ data: powerData }]
+        } );
+
+        historyData = liveData.map( d => ( {
+          meter_no: d.meter,
+          subscriber_name: d.subscriber,
+          t1_index: d.t1,
+          t2_index: d.t2,
+          t3_index: d.t3,
+          cos_phi: d.pf,
+          power_factor: d.pf,
+          reading_time: d.time
+        } ) );
+        historyGrid.setGridOption( 'rowData', historyData );
+      } )
+      .catch( () => { } );
+  }
+
+  function startReading() {
+    if ( readingTimer ) return;
+    refreshLiveData();
+    readingTimer = setInterval( refreshLiveData, 5000 );
+  }
+
+  function stopReading() {
+    if ( readingTimer ) {
+      clearInterval( readingTimer );
+      readingTimer = null;
+    }
+  }
+
+  window.addEventListener( 'resize', () => powerChart.resize() );
+</script>
+{% endblock %}

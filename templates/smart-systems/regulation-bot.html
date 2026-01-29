@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Mevzuat Botu{% endblock %}
+{% block page_title %}Mevzuat Botu{% endblock %}
+{% set breadcrumb = [{'name': 'Akıllı Sistemler', 'url': url_for('smart.index')}, {'name': 'Mevzuat Botu'}] %}
+{% block content %}
+<div class="grid grid-cols-3 gap-4 mb-4">
+    <div class="kpi-card">
+        <div class="kpi-card-value">{{ stats.total_sources or 0 }}</div>
+        <div class="kpi-card-label">Toplam Kaynak</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">{{ stats.total_alerts or 0 }}</div>
+        <div class="kpi-card-label">Toplam Uyarı</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value" style="color: var(--color-success)">✓ Uyumlu</div>
+        <div class="kpi-card-label">Sistem Durumu</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+    <!-- Mevzuat Asistanı -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🤖 EPDK Mevzuat Asistanı</h3>
+        </div>
+        <div class="card-body">
+            <div id="chatContainer"
+                style="height: 400px; overflow-y: auto; padding: 16px; background: var(--color-bg-page); border-radius: var(--radius-md); margin-bottom: 16px;">
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <div
+                        style="width: 36px; height: 36px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+                        🤖</div>
+                    <div
+                        style="flex: 1; background: white; padding: 12px 16px; border-radius: 12px; border-top-left-radius: 0;">
+                        <p style="margin: 0; color: var(--color-text-primary);">Merhaba! EPDK mevzuatı hakkında
+                            sorularınızı yanıtlayabilirim. Size nasıl yardımcı olabilirim?</p>
+                        <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+                            <button class="btn btn-outline-primary btn-sm"
+                                onclick="askQuestion('Reaktif enerji cezası nasıl hesaplanır?')">Reaktif ceza
+                                hesabı</button>
+                            <button class="btn btn-outline-primary btn-sm"
+                                onclick="askQuestion('OSB dağıtım bedeli nedir?')">OSB dağıtım bedeli</button>
+                            <button class="btn btn-outline-primary btn-sm"
+                                onclick="askQuestion('Serbest tüketici limiti nedir?')">Serbest tüketici</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="questionInput" class="form-control"
+                    placeholder="Mevzuat hakkında bir soru sorun..." style="flex: 1;">
+                <button class="btn btn-primary" onclick="askQuestion()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13" />
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Son Mevzuat Güncellemeleri -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📋 Son Mevzuat Güncellemeleri</h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div style="max-height: 480px; overflow-y: auto;">
+                {% if recent_alerts %}
+                {% for alert in recent_alerts %}
+                <div style="padding: 16px; border-bottom: 1px solid var(--color-border);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--color-text-primary);">{{ alert.title }}</div>
+                            <div style="font-size: 0.875rem; color: var(--color-text-secondary); margin-top: 4px;">{{
+                                alert.summary or 'Yeni g\xfcncelleme' }}</div>
+                        </div>
+                        {% if alert.is_important %}
+                        <span class="badge"
+                            style="background: var(--color-warning-bg); color: var(--color-warning);">\xd6nemli</span>
+                        {% else %}
+                        <span class="badge"
+                            style="background: var(--color-bg-tertiary); color: var(--color-text-secondary);">Bilgi</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 8px;">{{
+                        alert.created_at.strftime('%d %B %Y') if alert.created_at else '-' }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="padding: 32px; text-align: center; color: var(--color-text-secondary);">
+                    Hi\xe7 uyar\u0131 bulunamad\u0131
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function askQuestion( question ) {
+        var input = document.getElementById( 'questionInput' );
+        var container = document.getElementById( 'chatContainer' );
+        var q = question || input.value.trim();
+
+        if ( !q ) return;
+
+        // Kullanıcı mesajı
+        container.innerHTML += `
+    <div style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
+      <div style="max-width: 70%; background: var(--color-primary); color: white; padding: 12px 16px; border-radius: 12px; border-top-right-radius: 0;">
+        <p style="margin: 0;">${q}</p>
+      </div>
+    </div>
+  `;
+
+        input.value = '';
+        container.scrollTop = container.scrollHeight;
+
+        // Simüle edilmiş yanıt
+        setTimeout( () => {
+            var answers = {
+                'Reaktif enerji cezası nasıl hesaplanır?': 'EPDK mevzuatına göre, reaktif enerji cezası şu şekilde hesaplanır:<br><br>1. Güç faktörü (cos φ) 0.90\'ın altına düştüğünde ceza uygulanır<br>2. Fazla reaktif = Toplam Reaktif - (Aktif Enerji × 0.484)<br>3. Ceza Tutarı = Fazla Reaktif × Reaktif Birim Fiyatı<br><br>Mevcut sistemde reaktif birim fiyatı: 0.89 TL/kVArh',
+                'OSB dağıtım bedeli nedir?': 'OSB Dağıtım Bedeli, OSB\'nin elektrik altyapısını işletme maliyetlerini karşılamak için EPDK tarafından onaylanan bedeldir.<br><br>• Mevcut oran: 0.25 TL/kWh<br>• Toplam tüketime uygulanır<br>• Faturada ayrı kalem olarak gösterilir<br><br>Bu bedel, OSB içi trafo, kablo ve şalt tesislerinin bakım-onarım giderlerini kapsar.',
+                'Serbest tüketici limiti nedir?': '2026 yılı için serbest tüketici limiti yıllık 1.000 kWh olarak belirlenmiştir.<br><br>Bu limiti aşan tüketiciler:<br>• Tedarikçi seçme hakkına sahiptir<br>• İkili anlaşma yapabilir<br>• Piyasa fiyatından elektrik alabilir<br><br>OSB katılımcıları için bu limit özellikle önemlidir.'
+            };
+
+            var answer = answers[q] || 'Bu konuda detaylı bilgi için EPDK resmi sitesini ziyaret edebilir veya mevzuat veritabanında arama yapabilirsiniz. Size başka bir konuda yardımcı olabilir miyim?';
+
+            container.innerHTML += `
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <div style="width: 36px; height: 36px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; flex-shrink: 0;">🤖</div>
+        <div style="flex: 1; background: white; padding: 12px 16px; border-radius: 12px; border-top-left-radius: 0;">
+          <p style="margin: 0; color: var(--color-text-primary);">${answer}</p>
+        </div>
+      </div>
+    `;
+            container.scrollTop = container.scrollHeight;
+        }, 800 );
+    }
+
+    document.getElementById( 'questionInput' ).addEventListener( 'keypress', function ( e ) {
+        if ( e.key === 'Enter' ) askQuestion();
+    } );
+</script>
+{% endblock %}

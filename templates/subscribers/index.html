@@ -1,0 +1,170 @@
+{% extends 'base.html' %} {% block title %}Aboneler{% endblock %} {% block
+page_title %}Abone Yönetimi{% endblock %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">{{ stats.total if stats else 0 }}</div>
+    <div class="kpi-card-label">Toplam Abone</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">
+      {{ stats.active if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Aktif</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)">
+      {{ stats.suspended if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Askıda</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">
+      {{ stats.closed if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Kapalı</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-4">
+  <a href="{{ url_for('subscribers.list') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-primary-100);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-primary);
+        ">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87" />
+          <path d="M16 3.13a4 4 0 010 7.75" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Abone Listesi
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Tüm aboneleri görüntüle
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('subscribers.add') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-success-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-success);
+        ">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="8.5" cy="7" r="4" />
+          <line x1="20" y1="8" x2="20" y2="14" />
+          <line x1="23" y1="11" x2="17" y2="11" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Yeni Abone
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Abone kaydı oluştur
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('subscribers.meters') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-warning-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-warning);
+        ">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <line x1="9" y1="1" x2="9" y2="4" />
+          <line x1="15" y1="1" x2="15" y2="4" />
+          <line x1="9" y1="20" x2="9" y2="23" />
+          <line x1="15" y1="20" x2="15" y2="23" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Sayaç Tanımlama
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Sayaç-abone eşleştir
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('subscribers.contracts') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-info-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-info);
+        ">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Sözleşmeler
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Abone sözleşmeleri
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('subscribers.groups') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-danger-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-danger);
+        ">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Gruplandırma
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Abone grupları
+      </div>
+    </div>
+  </a>
+</div>
+{% endblock %}

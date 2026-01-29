@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Ceza Önleme{% endblock %}
+{% block page_title %}Ceza Önleme Sistemi{% endblock %}
+{% set breadcrumb = [{'name': 'Akıllı Sistemler', 'url': url_for('smart.index')}, {'name': 'Ceza Önleme'}] %}
+{% block content %}
+
+<!-- Backend verileri -->
+{% set high_risk = report.high_risk if report else [] %}
+{% set distribution = report.distribution if report else [] %}
+
+<!-- KPI Hesaplamaları -->
+{% set prevented_count = high_risk|selectattr('avg_pf', 'gt', 0.85)|list|length if high_risk else 0 %}
+{% set total_savings = high_risk|map(attribute='penalty_amount')|sum|default(0) %}
+{% set at_risk_count = high_risk|selectattr('avg_pf', 'lt', 0.90)|list|length if high_risk else 0 %}
+{% set avg_pf = (high_risk|map(attribute='avg_pf')|sum / high_risk|length)|round(2) if high_risk else 0.92 %}
+
+<div class="grid grid-cols-4 gap-4 mb-4">
+    <div class="kpi-card">
+        <div class="kpi-card-value" style="color: var(--color-success)">{{ prevented_count }}</div>
+        <div class="kpi-card-label">Önlenen Ceza (Bu Ay)</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">₺{{ "{:,.0f}".format(total_savings|default(0)) }}</div>
+        <div class="kpi-card-label">Potansiyel Ceza Tutarı</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value" style="color: var(--color-warning)">{{ at_risk_count }}</div>
+        <div class="kpi-card-label">Risk Altındaki Abone</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">{{ avg_pf }}</div>
+        <div class="kpi-card-label">Ortalama Cos φ</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+    <!-- Reaktif Enerji Risk Haritası -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">⚡ Reaktif Enerji Risk Haritası</h3>
+            <a href="{{ url_for('reports.reactive_report') }}" class="btn btn-sm btn-outline-primary">
+                📊 Detaylı Rapor
+            </a>
+        </div>
+        <div class="card-body">
+            <div id="riskChart" style="height: 300px;"></div>
+        </div>
+    </div>
+
+    <!-- Aktif Uyarılar -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🔔 Aktif Uyarılar</h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div style="max-height: 300px; overflow-y: auto;">
+                {% for sub in high_risk[:5] %}
+                <div
+                    style="padding: 16px; border-bottom: 1px solid var(--color-border); 
+                     background: {% if sub.avg_pf < 0.85 %}var(--color-danger-bg){% elif sub.avg_pf < 0.90 %}var(--color-warning-bg){% else %}transparent{% endif %};">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div
+                                style="font-weight: 600; color: {% if sub.avg_pf < 0.85 %}var(--color-danger){% elif sub.avg_pf < 0.90 %}var(--color-warning){% else %}var(--color-text-primary){% endif %};">
+                                {% if sub.avg_pf < 0.85 %}⚠️ Kritik{% elif sub.avg_pf < 0.90 %}⚡ Uyarı{% else %}📊
+                                    Bilgi{% endif %}: {{ sub.name }} </div>
+                                    <div style="font-size: 0.875rem; color: var(--color-text-secondary);">
+                                        Cos φ = {{ "%.2f"|format(sub.avg_pf) }} -
+                                        {% if sub.avg_pf < 0.85 %}Acil kompanzasyon gerekli{% elif sub.avg_pf < 0.90
+                                            %}İzleme altında{% else %}Kompanzasyon bakımı öneriliyor{% endif %} </div>
+                                    </div>
+                                    <button
+                                        class="btn btn-sm {% if sub.avg_pf < 0.85 %}btn-danger{% elif sub.avg_pf < 0.90 %}btn-warning{% else %}btn-outline-primary{% endif %}">
+                                        Detay
+                                    </button>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div style="padding: 16px; text-align: center; color: var(--color-text-secondary);">
+                            ✅ Şu an aktif uyarı bulunmuyor
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ceza Önleme Önerileri -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">💡 AI Destekli Önleme Önerileri</h3>
+            </div>
+            <div class="card-body">
+                <div id="recommendationsGrid" style="height: 350px;" class="ag-theme-alpine ag-theme-efys"></div>
+            </div>
+        </div>
+        {% endblock %}
+
+        {% block scripts %}
+        <script>
+            // Backend'den gelen veriler
+            var reportData = {{ report | tojson | safe if report else '{}' }};
+            var highRisk = reportData.high_risk || [];
+            var distribution = reportData.distribution || [];
+
+            // Risk Chart - Dağılım verisinden
+            var riskChart = echarts.init( document.getElementById( 'riskChart' ) );
+
+            // Distribution'dan pie chart verisi oluştur
+            var pieData = distribution.map( function ( d ) {
+                var colors = {
+                    '0.95+': '#10B981',
+                    '0.90-0.95': '#3B82F6',
+                    '0.85-0.90': '#F59E0B',
+                    '<0.85': '#EF4444'
+                };
+                var labels = {
+                    '0.95+': 'Güvenli (>0.95)',
+                    '0.90-0.95': 'Normal (0.90-0.95)',
+                    '0.85-0.90': 'Dikkat (0.85-0.90)',
+                    '<0.85': 'Risk (<0.85)'
+                };
+                return {
+                    value: d.count,
+                    name: labels[d.pf_range] || d.pf_range,
+                    itemStyle: { color: colors[d.pf_range] || '#888' }
+                };
+            } );
+
+            riskChart.setOption( {
+                tooltip: { trigger: 'item' },
+                legend: { bottom: 0 },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    label: { show: true, formatter: '{b}: {c} okuma' },
+                    data: pieData.length > 0 ? pieData : [
+                        { value: 22, name: 'Güvenli (>0.95)', itemStyle: { color: '#10B981' } },
+                        { value: 5, name: 'Normal (0.90-0.95)', itemStyle: { color: '#3B82F6' } },
+                        { value: 2, name: 'Dikkat (0.85-0.90)', itemStyle: { color: '#F59E0B' } },
+                        { value: 1, name: 'Risk (<0.85)', itemStyle: { color: '#EF4444' } }
+                    ]
+                }]
+            } );
+
+            // Recommendations Grid - Veritabanından
+            var recommendations = highRisk.map( function ( sub ) {
+                var pf = parseFloat( sub.avg_pf ) || 0;
+                var recommendation = '';
+                var priority = '';
+
+                if ( pf < 0.85 ) {
+                    recommendation = 'Kompanzasyon panosu kapasitesini artırın';
+                    priority = 'Yüksek';
+                } else if ( pf < 0.90 ) {
+                    recommendation = 'Reaktör kondansatör değişimi önerilir';
+                    priority = 'Orta';
+                } else {
+                    recommendation = 'Periyodik bakım planlaması yapın';
+                    priority = 'Düşük';
+                }
+
+                return {
+                    subscriber: sub.name,
+                    subscriber_code: sub.subscriber_code,
+                    current_pf: pf,
+                    recommendation: recommendation,
+                    potential_saving: parseFloat( sub.penalty_amount ) || 0,
+                    priority: priority
+                };
+            } );
+
+            var gridOptions = {
+                columnDefs: [
+                    { field: 'subscriber_code', headerName: 'Abone No', width: 120 },
+                    { field: 'subscriber', headerName: 'Abone', flex: 1 },
+                    {
+                        field: 'current_pf', headerName: 'Mevcut Cos φ', width: 130,
+                        cellStyle: function ( params ) {
+                            return {
+                                color: params.value < 0.85 ? '#EF4444' : params.value < 0.90 ? '#F59E0B' : '#10B981',
+                                fontWeight: 'bold'
+                            };
+                        },
+                        valueFormatter: function ( params ) {
+                            return params.value ? params.value.toFixed( 3 ) : '-';
+                        }
+                    },
+                    { field: 'recommendation', headerName: 'Öneri', flex: 1.5 },
+                    {
+                        field: 'potential_saving', headerName: 'Potansiyel Ceza', width: 150,
+                        valueFormatter: function ( params ) {
+                            return '₺' + ( params.value || 0 ).toLocaleString( 'tr-TR', { minimumFractionDigits: 0 } );
+                        }
+                    },
+                    {
+                        field: 'priority', headerName: 'Öncelik', width: 100,
+                        cellRenderer: function ( params ) {
+                            var colors = { 'Yüksek': '#EF4444', 'Orta': '#F59E0B', 'Düşük': '#10B981' };
+                            return '<span style="color: ' + colors[params.value] + '; font-weight: bold;">' + params.value + '</span>';
+                        }
+                    }
+                ],
+                rowData: recommendations,
+                defaultColDef: { sortable: true, filter: true, resizable: true },
+                localeText: AG_GRID_LOCALE_TR
+            };
+
+            agGrid.createGrid( document.getElementById( 'recommendationsGrid' ), gridOptions );
+
+            window.addEventListener( 'resize', function () { riskChart.resize(); } );
+        </script>
+        {% endblock %}

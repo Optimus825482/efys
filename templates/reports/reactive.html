@@ -1,0 +1,44 @@
+{% extends 'base.html' %} {% block title %}Reaktif Rapor{% endblock %} {% block
+page_title %}Reaktif Enerji Raporu{% endblock %} {% set breadcrumb = [{'name':
+'Raporlar', 'url': url_for('reports.index')}, {'name': 'Reaktif'}] %} {% block
+content %}
+<div class="grid grid-cols-3 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-label">Toplam Reaktif</div>
+    <div class="kpi-card-value">245,678 kVArh</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-label">Cezalı Abone</div>
+    <div class="kpi-card-value" style="color: var(--color-danger)">23</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-label">Toplam Ceza</div>
+    <div class="kpi-card-value" style="color: var(--color-danger)">₺45,230</div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Cezalı Aboneler</h3></div>
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Abone</th>
+          <th>Aktif</th>
+          <th>Reaktif</th>
+          <th>Cos φ</th>
+          <th>Ceza</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ABC Tekstil</td>
+          <td>125,450 kWh</td>
+          <td>45,678 kVArh</td>
+          <td style="color: var(--color-danger)">0.65</td>
+          <td style="font-weight: 600">₺12,450</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

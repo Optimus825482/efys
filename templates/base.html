@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}EFYS{% endblock %} | Enerji Faturalandırma Sistemi
+    </title>
+
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='img/favicon.svg') }}"
+    />
+
+    <!-- Fonts: Plus Jakarta Sans (Design System) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Styles -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/efys.css') }}"
+    />
+
+    <!-- AG-Grid Enterprise -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-grid.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-theme-alpine.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/dist/ag-grid-community.min.js"></script>
+
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <!-- Google Charts (Gauge için) -->
+    <script
+      type="text/javascript"
+      src="https://www.gstatic.com/charts/loader.js"
+    ></script>
+
+    <!-- Chart.js (geriye dönük uyumluluk) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      {% include 'components/sidebar.html' %}
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Header -->
+        {% include 'components/header.html' %}
+
+        <!-- Page Content -->
+        <div class="page-content">
+          <!-- Breadcrumb -->
+          {% if breadcrumb %} {% include 'components/breadcrumb.html' %} {%
+          endif %}
+
+          <!-- Flash Messages -->
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %} {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mb-4">{{ message }}</div>
+          {% endfor %} {% endif %} {% endwith %}
+
+          <!-- Page Content Block -->
+          {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        {% include 'components/footer.html' %}
+      </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- AG-Grid Türkçe Locale -->
+    <script>
+      // AG-Grid Türkçe dil desteği
+      const AG_GRID_LOCALE_TR = {
+        // Sayfalama
+        page: "Sayfa",
+        more: "Daha fazla",
+        to: "-",
+        of: "/",
+        next: "Sonraki",
+        last: "Son",
+        first: "İlk",
+        previous: "Önceki",
+        loadingOoo: "Yükleniyor...",
+
+        // Filtreler
+        selectAll: "Tümünü Seç",
+        searchOoo: "Ara...",
+        blanks: "Boş",
+        noMatches: "Eşleşme yok",
+
+        // Filtre koşulları
+        filterOoo: "Filtrele...",
+        equals: "Eşittir",
+        notEqual: "Eşit değil",
+        lessThan: "Küçüktür",
+        greaterThan: "Büyüktür",
+        lessThanOrEqual: "Küçük veya eşit",
+        greaterThanOrEqual: "Büyük veya eşit",
+        inRange: "Aralıkta",
+        contains: "İçerir",
+        notContains: "İçermez",
+        startsWith: "İle başlar",
+        endsWith: "İle biter",
+
+        // Sütun menüsü
+        pinColumn: "Sütunu Sabitle",
+        noPin: "Sabitleme Yok",
+        pinLeft: "Sola Sabitle",
+        pinRight: "Sağa Sabitle",
+        autosizeThiscolumn: "Bu Sütunu Otomatik Boyutlandır",
+        autosizeAllColumns: "Tüm Sütunları Otomatik Boyutlandır",
+        resetColumns: "Sütunları Sıfırla",
+
+        // Sıralama
+        sortAscending: "Artan Sırala",
+        sortDescending: "Azalan Sırala",
+
+        // Export
+        export: "Dışa Aktar",
+        csvExport: "CSV Olarak İndir",
+        excelExport: "Excel Olarak İndir",
+
+        // Durum
+        noRowsToShow: "Gösterilecek kayıt yok",
+
+        // Sayfalama
+        pageSize: "Sayfa Boyutu",
+
+        // Grup
+        rowGroupColumnsEmptyMessage: "Gruplamak için sütunu buraya sürükleyin",
+
+        // Toplam
+        sum: "Toplam",
+        avg: "Ortalama",
+        count: "Adet",
+        min: "Min",
+        max: "Max",
+
+        // Diğer
+        copy: "Kopyala",
+        copyWithHeaders: "Başlıklarla Kopyala",
+        paste: "Yapıştır",
+      };
+
+      // ECharts Türkçe formatları
+      const EFYS_CHART_CONFIG = {
+        locale: "tr-TR",
+        currency: "₺",
+        units: {
+          energy: "kWh",
+          power: "kW",
+          reactive: "kVArh",
+        },
+        colors: {
+          primary: "#2563EB",
+          secondary: "#3B82F6",
+          cta: "#F97316",
+          success: "#10B981",
+          warning: "#F59E0B",
+          danger: "#EF4444",
+          t1: "#2563EB", // Gündüz
+          t2: "#F97316", // Puant
+          t3: "#10B981", // Gece
+        },
+      };
+    </script>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,187 @@
+<!-- EFYS Sidebar Navigation -->
+<aside class="sidebar" id="sidebar">
+  <!-- Logo -->
+  <div class="sidebar-logo">
+    <h1>
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#2563EB" />
+        <path d="M8 16L14 10L20 16L14 22L8 16Z" fill="white" />
+        <path d="M14 16L20 10L26 16L20 22L14 16Z" fill="white" fill-opacity="0.6" />
+      </svg>
+      EFYS
+    </h1>
+    <span>Enerji Faturalandırma Sistemi</span>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav-section">
+    <!-- Dashboard -->
+    <a href="{{ url_for('dashboard.index') }}"
+      class="nav-item {% if request.endpoint and 'dashboard' in request.endpoint %}active{% endif %}">
+      <span class="nav-item-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      </span>
+      Dashboard
+    </a>
+
+    <!-- Veri İzleme -->
+    <div class="nav-item {% if request.endpoint and 'monitoring' in request.endpoint %}expanded active{% endif %}"
+      onclick="toggleSubmenu(this)">
+      <span class="nav-item-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18" />
+          <path d="M18 9l-5 5-4-4-3 3" />
+        </svg>
+      </span>
+      Veri İzleme
+      <svg class="nav-item-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" style="margin-left: auto">
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </div>
+    <div class="nav-submenu">
+      <a href="{{ url_for('monitoring.last_indexes') }}" class="nav-submenu-item">Son Endeksler</a>
+      <a href="{{ url_for('monitoring.load_profile') }}" class="nav-submenu-item">Yük Profili</a>
+      <a href="{{ url_for('monitoring.vee') }}" class="nav-submenu-item">VEE Doğrulama</a>
+      <a href="{{ url_for('monitoring.missing_data') }}" class="nav-submenu-item">Eksik Veri</a>
+      <a href="{{ url_for('monitoring.loss_analysis') }}" class="nav-submenu-item">Kayıp/Kaçak Analizi</a>
+    </div>
+
+    <!-- Faturalama -->
+    <div class="nav-item {% if request.endpoint and 'billing' in request.endpoint %}expanded active{% endif %}"
+      onclick="toggleSubmenu(this)">
+      <span class="nav-item-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+        </svg>
+      </span>
+      Faturalama
+      <span class="nav-item-badge">Yeni</span>
+    </div>
+    <div class="nav-submenu">
+      <a href="{{ url_for('billing.tariff') }}" class="nav-submenu-item">Tarife Yönetimi</a>
+      <a href="{{ url_for('billing.period') }}" class="nav-submenu-item">Dönem Yönetimi</a>
+      <a href="{{ url_for('billing.calculate') }}" class="nav-submenu-item">Fatura Hesapla</a>
+      <a href="{{ url_for('billing.bulk_invoice') }}" class="nav-submenu-item">Toplu Fatura</a>
+      <a href="{{ url_for('billing.preview') }}" class="nav-submenu-item">Fatura Önizleme</a>
+      <a href="{{ url_for('billing.additional') }}" class="nav-submenu-item">Ek Tahakkuk</a>
+      <a href="{{ url_for('billing.cancel') }}" class="nav-submenu-item">Fatura İptali</a>
+      <a href="{{ url_for('billing.print_invoice') }}" class="nav-submenu-item">Yazdır/PDF</a>
+    </div>
+
+    <!-- Abone Yönetimi -->
+    <div class="nav-item {% if request.endpoint and 'subscribers' in request.endpoint %}expanded active{% endif %}"
+      onclick="toggleSubmenu(this)">
+      <span class="nav-item-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+        </svg>
+      </span>
+      Abone Yönetimi
+    </div>
+    <div class="nav-submenu">
+      <a href="{{ url_for('subscribers.index') }}" class="nav-submenu-item">Abone Listesi</a>
+      <a href="{{ url_for('subscribers.card') }}" class="nav-submenu-item">Abone Kartı</a>
+      <a href="{{ url_for('subscribers.contracts') }}" class="nav-submenu-item">Sözleşmeler</a>
+    </div>
+
+    <!-- Raporlama -->
+    <div class="nav-item {% if request.endpoint and 'reports' in request.endpoint %}expanded active{% endif %}"
+      onclick="toggleSubmenu(this)">
+      <span class="nav-item-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+        </svg>
+      </span>
+      Raporlama
+    </div>
+    <div class="nav-submenu">
+      <a href="{{ url_for('reports.index_report') }}" class="nav-submenu-item">Endeks Raporu</a>
+      <a href="{{ url_for('reports.consumption') }}" class="nav-submenu-item">Tüketim Raporu</a>
+      <a href="{{ url_for('reports.invoice_report') }}" class="nav-submenu-item">Fatura Raporu</a>
+      <a href="{{ url_for('reports.reading_success') }}" class="nav-submenu-item">Okuma Başarısı</a>
+      <a href="{{ url_for('reports.loss_report') }}" class="nav-submenu-item">Kayıp/Kaçak</a>
+      <a href="{{ url_for('reports.reactive_report') }}" class="nav-submenu-item">Reaktif Enerji</a>
+    </div>
+
+    <!-- Akıllı Sistemler -->
+    <div class="nav-item {% if request.endpoint and 'smart' in request.endpoint %}expanded active{% endif %}"
+      onclick="toggleSubmenu(this)">
+      <span class="nav-item-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      </span>
+      Akıllı Sistemler
+    </div>
+    <div class="nav-submenu">
+      <a href="{{ url_for('settings.mevzuat') }}" class="nav-submenu-item">📜 Mevzuat Takip</a>
+      <a href="{{ url_for('smart.penalty_prevention') }}" class="nav-submenu-item">Ceza Önleme</a>
+      <a href="{{ url_for('smart.portal') }}" class="nav-submenu-item">Sanayici Portalı</a>
+      <a href="{{ url_for('smart.erp_bridge') }}" class="nav-submenu-item">ERP Köprüsü</a>
+    </div>
+
+    <!-- Sistem Ayarları -->
+    <div class="nav-item {% if request.endpoint and 'settings' in request.endpoint %}expanded active{% endif %}"
+      onclick="toggleSubmenu(this)">
+      <span class="nav-item-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      </span>
+      Sistem Ayarları
+    </div>
+    <div class="nav-submenu">
+      <a href="{{ url_for('settings.users') }}" class="nav-submenu-item">Kullanıcılar</a>
+      <a href="{{ url_for('settings.roles') }}" class="nav-submenu-item">Roller</a>
+      <a href="{{ url_for('settings.parameters') }}" class="nav-submenu-item">Parametreler</a>
+      <a href="{{ url_for('settings.email_sms') }}" class="nav-submenu-item">Email/SMS</a>
+      <a href="{{ url_for('settings.backup') }}" class="nav-submenu-item">Yedekleme</a>
+      <a href="{{ url_for('settings.logs') }}" class="nav-submenu-item">Loglar</a>
+      <a href="{{ url_for('settings.security') }}" class="nav-submenu-item">Güvenlik</a>
+    </div>
+  </nav>
+
+  <!-- User Section -->
+  <div class="sidebar-user">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="
+          width: 40px;
+          height: 40px;
+          background: var(--color-primary-100);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-primary);
+          font-weight: 600;
+        ">
+        EA
+      </div>
+      <div>
+        <div style="font-weight: 600; color: var(--color-text-primary)">
+          Erkan Admin
+        </div>
+        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">
+          Sistem Yöneticisi
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<script>
+  function toggleSubmenu( element ) {
+    element.classList.toggle( "expanded" );
+  }
+</script>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html class="light" lang="tr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sanayici Portalı{% endblock %} | EFYS</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1387ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .gauge-mask {
+            mask-image: radial-gradient(farthest-side, transparent 60%, black 61%);
+            -webkit-mask-image: radial-gradient(farthest-side, transparent 60%, black 61%);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body
+    class="font-display bg-background-light dark:bg-background-dark text-[#111518] dark:text-white antialiased overflow-hidden">
+
+    <!-- Subscriber Selection Modal -->
+    {% if show_subscriber_modal and subscribers and subscribers|length > 0 %}
+    <div id="subscriberModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div
+            class="bg-white dark:bg-[#1a2634] rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-primary to-blue-600 p-6">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-white text-4xl">factory</span>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Sanayici Portalı</h2>
+                        <p class="text-blue-100 text-sm">Devam etmek için abone seçimi yapınız</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto max-h-[60vh]">
+                <div class="grid gap-3">
+                    {% for sub in subscribers %}
+                    <button onclick="selectSubscriberFromModal({{ sub.id }})"
+                        class="subscriber-card flex items-center gap-4 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group">
+                        <div
+                            class="bg-gradient-to-br from-primary to-blue-600 rounded-full size-14 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                            {{ sub.name[:2].upper() }}
+                        </div>
+                        <div class="flex-1 text-left">
+                            <h3 class="font-bold text-lg text-gray-900 dark:text-white group-hover:text-primary">
+                                {{ sub.name }}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                {{ sub.subscriber_code }}
+                            </p>
+                        </div>
+                        <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-3xl">
+                            arrow_forward
+                        </span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 dark:bg-[#0f1419] p-4 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+                    <span class="material-symbols-outlined text-sm align-middle">info</span>
+                    Seçtiğiniz aboneye ait verileri görüntüleyebileceksiniz
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex h-screen w-full">
+        <!-- Sidebar -->
+        <aside
+            class="hidden lg:flex w-72 flex-col bg-white dark:bg-[#1a2634] border-r border-[#f0f2f4] dark:border-[#2a3644] h-full flex-shrink-0">
+            <div class="p-5 flex flex-col gap-8 h-full">
+                <!-- User Profile Summary -->
+                <div class="flex items-center gap-3">
+                    <div
+                        class="bg-gradient-to-br from-primary to-blue-600 rounded-full size-12 flex items-center justify-center text-white font-bold text-lg">
+                        {{ subscriber.name[:2].upper() if subscriber else 'AB' }}
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-base font-bold leading-tight dark:text-white">{{ subscriber.name if subscriber
+                            else 'Abone' }}</h1>
+                        <p class="text-[#617789] dark:text-gray-400 text-xs font-medium uppercase tracking-wider">{{
+                            subscriber.code if subscriber else 'A-000001' }}</p>
+                    </div>
+                </div>
+
+                <!-- Subscriber Selector -->
+                {% if subscribers and subscribers|length > 1 %}
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <label class="text-xs font-bold text-blue-900 dark:text-blue-200 mb-2 block">Abone Seçimi</label>
+                    <select id="subscriberSelector"
+                        class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent">
+                        {% for sub in subscribers %}
+                        <option value="{{ sub.id }}" {{ 'selected' if sub.id==selected_subscriber_id else '' }}>
+                            {{ sub.subscriber_code }} - {{ sub.name[:25] }}{{ '...' if sub.name|length > 25 else '' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Navigation -->
+                <nav class="flex flex-col gap-2 flex-1">
+                    <a class="flex items-center gap-3 px-3 py-3 rounded-lg {{ 'bg-primary/10 text-primary' if request.endpoint == 'portal.index' else 'hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300' }} transition-colors"
+                        href="{{ url_for('portal.index') }}">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span class="text-sm font-bold">Panel Genel Bakış</span>
+                    </a>
+                    <a class="flex items-center gap-3 px-3 py-3 rounded-lg {{ 'bg-primary/10 text-primary' if request.endpoint == 'portal.invoices' else 'hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300' }} transition-colors"
+                        href="{{ url_for('portal.invoices') }}">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                        <span class="text-sm font-medium">Faturalar</span>
+                    </a>
+                    <a class="flex items-center gap-3 px-3 py-3 rounded-lg {{ 'bg-primary/10 text-primary' if request.endpoint == 'portal.reports' else 'hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300' }} transition-colors"
+                        href="{{ url_for('portal.reports') }}">
+                        <span class="material-symbols-outlined">bar_chart</span>
+                        <span class="text-sm font-medium">Detaylı Raporlar</span>
+                    </a>
+                    <a class="flex items-center gap-3 px-3 py-3 rounded-lg {{ 'bg-primary/10 text-primary' if request.endpoint == 'portal.energy_quality' else 'hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300' }} transition-colors"
+                        href="{{ url_for('portal.energy_quality') }}">
+                        <span class="material-symbols-outlined">bolt</span>
+                        <span class="text-sm font-medium">Enerji Kalitesi</span>
+                    </a>
+                </nav>
+
+                <!-- Footer / Help -->
+                <div class="mt-auto pt-6 border-t border-[#f0f2f4] dark:border-[#2a3644]">
+                    <a href="/"
+                        class="flex items-center gap-3 px-3 py-2 text-[#617789] dark:text-gray-400 cursor-pointer hover:text-red-500 transition-colors">
+                        <span class="material-symbols-outlined">logout</span>
+                        <span class="text-sm font-medium">Çıkış Yap</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-full overflow-y-auto bg-background-light dark:bg-background-dark relative">
+            <!-- Mobile Header -->
+            <header
+                class="flex lg:hidden items-center justify-between p-4 bg-white dark:bg-[#1a2634] border-b border-[#f0f2f4] dark:border-[#2a3644]">
+                <div class="flex items-center gap-2 font-bold text-lg dark:text-white">
+                    <span class="material-symbols-outlined text-primary">factory</span>
+                    EFYS Portal
+                </div>
+                <button class="text-[#111518] dark:text-white" onclick="toggleMobileMenu()">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+            </header>
+
+            <!-- Top Header Desktop -->
+            <header
+                class="hidden lg:flex items-center justify-between px-8 py-4 bg-white dark:bg-[#1a2634] border-b border-[#f0f2f4] dark:border-[#2a3644]">
+                <h2 class="text-xl font-bold text-[#111518] dark:text-white">{% block page_title %}Panel Genel Bakış{%
+                    endblock %}</h2>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <span
+                            class="material-symbols-outlined text-[#617789] absolute left-3 top-1/2 -translate-y-1/2">search</span>
+                        <input
+                            class="pl-10 pr-4 py-2 rounded-lg border border-[#dbe1e6] dark:border-[#2a3644] dark:bg-[#101a22] text-sm focus:outline-none focus:border-primary w-64 transition-all"
+                            placeholder="Rapor veya fatura ara..." type="text">
+                    </div>
+                    <button
+                        class="flex items-center justify-center size-10 rounded-full hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] relative text-[#617789] dark:text-gray-300 transition-colors">
+                        <span class="material-symbols-outlined">notifications</span>
+                        <span
+                            class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-[#1a2634]"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="p-6 lg:p-10 max-w-[1400px] mx-auto w-full flex flex-col gap-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenu" class="fixed inset-0 bg-black/50 z-50 hidden lg:hidden">
+        <div class="bg-white dark:bg-[#1a2634] w-72 h-full p-5 flex flex-col">
+            <div class="flex justify-between items-center mb-8">
+                <span class="font-bold text-lg">Menü</span>
+                <button onclick="toggleMobileMenu()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <nav class="flex flex-col gap-2">
+                <a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 text-primary"
+                    href="{{ url_for('portal.index') }}">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="text-sm font-bold">Panel Genel Bakış</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#f0f2f4]"
+                    href="{{ url_for('portal.invoices') }}">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <span class="text-sm font-medium">Faturalar</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#f0f2f4]"
+                    href="{{ url_for('portal.reports') }}">
+                    <span class="material-symbols-outlined">bar_chart</span>
+                    <span class="text-sm font-medium">Detaylı Raporlar</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#f0f2f4]"
+                    href="{{ url_for('portal.energy_quality') }}">
+                    <span class="material-symbols-outlined">bolt</span>
+                    <span class="text-sm font-medium">Enerji Kalitesi</span>
+                </a>
+            </nav>
+            <div class="mt-auto pt-6 border-t">
+                <a href="/" class="flex items-center gap-3 px-3 py-2 text-red-500">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="text-sm font-medium">Çıkış Yap</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleMobileMenu() {
+            document.getElementById( 'mobileMenu' ).classList.toggle( 'hidden' );
+        }
+
+        // Subscriber Modal Selection
+        function selectSubscriberFromModal( subscriberId ) {
+            const modal = document.getElementById( 'subscriberModal' );
+            const cards = document.querySelectorAll( '.subscriber-card' );
+
+            // Visual feedback - disable all cards
+            cards.forEach( card => {
+                card.disabled = true;
+                card.style.opacity = '0.5';
+                card.style.pointerEvents = 'none';
+            } );
+
+            // POST to backend
+            fetch( '/portal/select-subscriber/' + subscriberId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            } )
+                .then( response => response.json() )
+                .then( data => {
+                    if ( data.success ) {
+                        // Fade out modal
+                        modal.style.opacity = '0';
+                        setTimeout( () => {
+                            window.location.reload();
+                        }, 200 );
+                    } else {
+                        alert( 'Abone seçimi başarısız oldu. Lütfen tekrar deneyin.' );
+                        // Re-enable cards
+                        cards.forEach( card => {
+                            card.disabled = false;
+                            card.style.opacity = '1';
+                            card.style.pointerEvents = 'auto';
+                        } );
+                    }
+                } )
+                .catch( error => {
+                    console.error( 'Subscriber selection error:', error );
+                    alert( 'Bağlantı hatası oluştu.' );
+                    // Re-enable cards
+                    cards.forEach( card => {
+                        card.disabled = false;
+                        card.style.opacity = '1';
+                        card.style.pointerEvents = 'auto';
+                    } );
+                } );
+        }
+
+        // Subscriber Selector - Dynamic switching (sidebar dropdown)
+        document.addEventListener( 'DOMContentLoaded', function () {
+            const subscriberSelector = document.getElementById( 'subscriberSelector' );
+            if ( subscriberSelector ) {
+                subscriberSelector.addEventListener( 'change', function ( e ) {
+                    const selectedId = e.target.value;
+
+                    // Show loading state
+                    const originalHTML = subscriberSelector.innerHTML;
+                    subscriberSelector.disabled = true;
+
+                    // POST to backend API
+                    fetch( '/portal/select-subscriber/' + selectedId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    } )
+                        .then( response => response.json() )
+                        .then( data => {
+                            if ( data.success ) {
+                                // Reload page to reflect new subscriber data
+                                window.location.reload();
+                            } else {
+                                alert( 'Abone seçimi başarısız oldu. Lütfen tekrar deneyin.' );
+                                subscriberSelector.disabled = false;
+                            }
+                        } )
+                        .catch( error => {
+                            console.error( 'Subscriber selection error:', error );
+                            alert( 'Bağlantı hatası oluştu.' );
+                            subscriberSelector.innerHTML = originalHTML;
+                            subscriberSelector.disabled = false;
+                        } );
+                } );
+            }
+        } );
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

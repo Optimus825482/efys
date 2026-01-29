@@ -1,0 +1,45 @@
+Bu rehber, bir OSB Elektrik Faturalandırma ve Yönetim Sistemi (Yazılımı) tasarlayan bir yazılımcı veya süreci yöneten
+bir işletme müdürü için Uygulama El Kitabı niteliğinde hazırlanmıştır.Süreci 4 ana fazda ele alacağız: Veri Toplama,
+Maliyet Analizi (Birim Fiyat Belirleme), Faturalandırma Algoritması ve Muhasebeleşme.📘 OSB Elektrik Dağıtım ve
+Faturalandırma Uygulama RehberiFAZ 1: Veri Toplama ve Hazırlık (Input)Fatura kesebilmek için sistemin her ayın ilk günü
+şu verileri eksiksiz alması gerekir:1.1. Ana Sayaç Verisi (Girdi)OSB’nin TEİAŞ veya Tedarik Şirketi ile arasındaki "Alış
+Noktası" sayacıdır.Toplam Çekilen Enerji (kWh): T1, T2, T3 ve Toplam.Endüktif/Kapasitif Tüketim (kvarh): Ceza kontrolü
+için.Gelen Fatura Tutarı (TL): OSB'ye kesilen toplam fatura (Enerji + İletim + Dağıtım + Vergiler).1.2. Katılımcı Sayaç
+Verileri (Dağılım)OSB içindeki tüm fabrikaların sayaç verileri (OSOS - Otomatik Sayaç Okuma Sistemi ile alınır).Aktif
+Tüketimler: Her abone için T1, T2, T3.Reaktif Tüketimler: Endüktif ve Kapasitif (Ceza hesabı için).1.3. Maliyet Verileri
+(OSB Muhasebesi)Dağıtım bedelini hesaplamak için o ayın işletme giderleri:Personel maaşları (Elektrik
+birimi).Bakım/Onarım giderleri.Yatırım amortismanları.FAZ 2: Birim Fiyatların Belirlenmesi (Processing)Burası sistemin
+"beyni"dir. İki temel fiyat hesaplanır: Enerji Fiyatı ve Dağıtım Bedeli Fiyatı.Adım 1: Aktif Enerji Birim Fiyatı
+(Hammadde)OSB kâr amacı gütmeden enerjiyi aldığı fiyattan satar (Genellikle).Yöntem: OSB'ye gelen toplam "Aktif Enerji
+Faturası Tutarı" / "OSB Ana Sayaç Toplam kWh".Formül: Birim Enerji Fiyatı = (Gelen Fatura Aktif Enerji Kalemi) / (Ana
+Sayaç Tüketimi)Not: Eğer OSB "Son Kaynak Tedarik" (SKTT) kapsamında alıyorsa, PTF+YEKDEM formülü uygulanır.Adım 2:
+Dağıtım Bedeli Birim Fiyatı (Hizmet Bedeli)OSB'nin işletme maliyetini ve kayıp-kaçak farkını çıkardığı yerdir.Formül:$$
+\text{Birim Dağıtım Bedeli} = \frac{\text{(Aylık İşletme Giderleri + Teknik Kayıp Maliyeti)}}{\text{Katılımcıların
+Toplam Tüketimi (kWh)}}$$Teknik Kayıp Maliyeti: (Ana Sayaç - Abone Sayaçları Toplamı) x Enerji Alış FiyatıKRİTİK KONTROL
+(Tavan Fiyat):Hesapladığınız bu rakam, bölgedeki EDAŞ (Örn: Başkent EDAŞ) Dağıtım Bedelinden yüksek olamaz.Eğer
+(Hesaplanan > EDAŞ_Tarifesi) ise; KULLAN => EDAŞ_Tarifesi (OSB zarar eder).Eğer (Hesaplanan < EDAŞ_Tarifesi) ise;
+    KULLAN=> Hesaplanan (Katılımcı kâr eder).FAZ 3: Faturalandırma Algoritması (Calculation)Her bir abone için çalışacak
+    yazılım döngüsü (Loop) şöyledir:3.1. Aktif Enerji Bedeli HesabıAbonenin tarifesine göre (Tek zamanlı veya Çok
+    zamanlı) hesaplanır.Formül: (T1_kWh x T1_Fiyat) + (T2_kWh x T2_Fiyat) + (T3_kWh x T3_Fiyat)3.2. Dağıtım Bedeli
+    HesabıAbone OSB şebekesini ne kadar kullandıysa o kadar öder.Formül: (Toplam Tüketim kWh) x (FAZ 2'de Belirlenen
+    Dağıtım Birim Fiyatı)3.3. İletim Bedeli Hesabı (Pass-Through)TEİAŞ'ın OSB'ye kestiği iletim bedelinin aboneye
+    yansıtılması.Formül: (Toplam Tüketim kWh) x (TEİAŞ İletim Birim Fiyatı)3.4. Reaktif Ceza Kontrolü (Ceza
+    Algoritması)Sistem abonenin cos(φ) değerini kontrol eder.Kural 1: (Endüktif Tüketim / Aktif Tüketim) > %20 ise =>
+    Ceza Var.Hesap: Endüktif Sayaç Değeri x (Tek Zamanlı Aktif Enerji Birim Fiyatı)Kural 2: (Kapasitif Tüketim / Aktif
+    Tüketim) > %15 ise => Ceza Var.Hesap: Kapasitif Sayaç Değeri x (Tek Zamanlı Aktif Enerji Birim Fiyatı)Not: İkisi de
+    sınırı aşarsa sadece yüksek olan tutar faturaya eklenir.3.5. Vergiler ve FonlarEnerji Fonu: Kalktı (Artık %0).TRT
+    Payı: Kalktı (Artık %0).Belediye Tüketim Vergisi (BTV): Aktif Enerji Bedeli x %1 (Belediye mücavir alanı
+    içindeyse).KDV: (Aktif + Dağıtım + İletim + Ceza + BTV) x %10 (Güncel orana bakılmalı).FAZ 4: Fatura Çıktısı ve
+    Raporlama (Output)Oluşturulacak faturada yasal olarak bulunması gereken satırlar şunlardır:Fatura
+    KalemiAçıklamaTüketim Dönemiİlk Okuma ve Son Okuma TarihleriÇarpanAkım/Gerilim trafosu çarpanı (Sayaç endeksini
+    gerçek tüketime çevirir)Enerji BedeliTüketilen elektriğin ham maliyetiDağıtım BedeliOSB altyapı kullanım
+    bedeliİletim BedeliTEİAŞ kullanım bedeliReaktif BedelVarsa ceza tutarıGüç Bedeli(Bazı özel tarifelerde) Sözleşme
+    gücü üzerinden alınan bedelVergilerBTV ve KDVGENEL TOPLAMÖdenecek TutarYazılımcı/Yönetici İçin İpuçları (Best
+    Practices)Mahsuplaşma (GES Varsa):Eğer OSB içinde çatısında Güneş Paneli (GES) olan fabrika varsa, algoritma
+    değişir. Önce (Üretim - Tüketim) yapılır. Kalan net tüketim üzerinden "Aktif Enerji" hesaplanır. Ancak "Dağıtım
+    Bedeli" genellikle çekilen (toplam tüketilen) enerji üzerinden alınır (Mevzuat detayına dikkat).Kayıp/Kaçak
+    Takibi:Yazılımınıza mutlaka bir "Dashboard" ekleyin.Giriş Enerjisi vs Satılan Enerji grafiği.Eğer fark %3-4'ü
+    geçiyorsa şebekede teknik bir sorun veya kaçak kullanım vardır.YEKDEM Etkisi:OSB'ye gelen enerji fiyatı dolar kuruna
+    veya YEKDEM (Yenilenebilir Enerji) maliyetlerine göre her ay değişebilir. Bu yüzden Birim Fiyatlar veritabanında
+    "Parametrik" olmalı, sabit (hard-coded) yazılmamalıdır.Bu rehberi bir teknik şartnameye (spec) dönüştürerek yazılım
+    ekibine verebilir veya Excel tablolarınızı bu hiyerarşiye göre kurabilirsiniz.

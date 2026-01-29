@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% block title %}Dönem Yönetimi{% endblock %}
+{% block page_title %}Fatura Dönemleri{% endblock %}
+{% set breadcrumb = [{'name': 'Faturalama'}, {'name': 'Dönemler'}] %}
+
+{% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpi-total">{{ periods | length }}</div>
+    <div class="kpi-card-label">Toplam Dönem</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)" id="kpi-active">
+      {{ periods | selectattr('status', 'equalto', 'open') | list | length }}
+    </div>
+    <div class="kpi-card-label">Aktif Dönem</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-primary)" id="kpi-closed">
+      {{ periods | rejectattr('status', 'equalto', 'open') | list | length }}
+    </div>
+    <div class="kpi-card-label">Kapalı Dönem</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpi-billed">₺0</div>
+    <div class="kpi-card-label">Toplam Faturalandırma</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Dönem Listesi</h3>
+    <button class="btn btn-primary" onclick="openNewPeriodModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Yeni Dönem
+    </button>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="periodGrid" class="ag-theme-alpine ag-theme-efys" style="height: 450px"></div>
+  </div>
+</div>
+
+<!-- Yeni Dönem Modal -->
+<div id="newPeriodModal" class="modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeModal()"></div>
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3>Yeni Dönem Oluştur</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="new-period-form">
+        <div class="form-group">
+          <label class="form-label">Dönem Adı</label>
+          <input type="text" class="form-input" id="period-name" placeholder="Şubat 2026" required />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Başlangıç Tarihi</label>
+            <input type="date" class="form-input" id="period-start" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bitiş Tarihi</label>
+            <input type="date" class="form-input" id="period-end" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Durum</label>
+          <select class="form-select" id="period-status">
+            <option value="open">Aktif (Açık)</option>
+            <option value="closed">Kapalı</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary" onclick="createPeriod()">Dönem Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-content {
+    position: relative;
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border);
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var periodData = {{ periods | tojson | safe if periods else '[]' }};
+  var gridApi;
+
+  function toTrDate( value ) {
+    if ( !value ) return "-";
+    const date = new Date( value );
+    if ( Number.isNaN( date.getTime() ) ) return "-";
+    return date.toLocaleDateString( "tr-TR" );
+  }
+
+  var gridData = periodData.map( p => ( {
+    id: p.id,
+    name: p.name || p.period_name || 'Dönem ' + p.id,
+    start: toTrDate( p.period_start ),
+    end: toTrDate( p.period_end ),
+    status: p.status === 'open' ? 'Aktif' : 'Kapalı',
+    raw_status: p.status,
+    invoices: p.invoice_count || 0,
+    amount: p.total_amount || 0
+  } ) );
+
+  // KPI Calculations
+  var totalBilled = gridData.reduce( ( sum, p ) => sum + p.amount, 0 );
+  document.getElementById( 'kpi-billed' ).textContent = '₺' + ( totalBilled / 1000000 ).toFixed( 1 ) + 'M';
+
+  gridApi = agGrid.createGrid( document.getElementById( "periodGrid" ), {
+    columnDefs: [
+      { headerName: "Dönem", field: "name", flex: 1, cellStyle: { fontWeight: "600" } },
+      { headerName: "Başlangıç", field: "start", width: 120 },
+      { headerName: "Bitiş", field: "end", width: 120 },
+      {
+        headerName: "Durum",
+        field: "status",
+        width: 110,
+        cellRenderer: p => `<span class="badge ${p.value === "Aktif" ? "badge-success" : "badge-secondary"}">${p.value}</span>`
+      },
+      {
+        headerName: "Fatura Sayısı",
+        field: "invoices",
+        width: 120,
+        valueFormatter: p => p.value?.toLocaleString( "tr-TR" )
+      },
+      {
+        headerName: "Toplam Tutar",
+        field: "amount",
+        width: 140,
+        valueFormatter: p => "₺" + p.value?.toLocaleString( "tr-TR" )
+      },
+      {
+        headerName: "İşlem",
+        width: 200,
+        sortable: false,
+        cellRenderer: p => {
+          const isOpen = p.data.raw_status === 'open';
+          return `
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-secondary btn-sm" onclick="viewPeriod(${p.data.id})">Detay</button>
+                        <button class="btn btn-${isOpen ? 'warning' : 'success'} btn-sm" onclick="togglePeriod(${p.data.id}, '${p.data.raw_status}')">
+                            ${isOpen ? 'Kapat' : 'Aç'}
+                        </button>
+                    </div>
+                `;
+        }
+      }
+    ],
+    rowData: gridData,
+    localeText: AG_GRID_LOCALE_TR,
+    defaultColDef: { sortable: true, resizable: true }
+  } );
+
+  function openNewPeriodModal() {
+    document.getElementById( 'newPeriodModal' ).style.display = 'flex';
+    // Set default dates for next month
+    const now = new Date();
+    const nextMonth = new Date( now.getFullYear(), now.getMonth() + 1, 1 );
+    const lastDay = new Date( now.getFullYear(), now.getMonth() + 2, 0 );
+
+    document.getElementById( 'period-name' ).value = nextMonth.toLocaleDateString( 'tr-TR', { month: 'long', year: 'numeric' } );
+    document.getElementById( 'period-start' ).value = nextMonth.toISOString().split( 'T' )[0];
+    document.getElementById( 'period-end' ).value = lastDay.toISOString().split( 'T' )[0];
+  }
+
+  function closeModal() {
+    document.getElementById( 'newPeriodModal' ).style.display = 'none';
+  }
+
+  async function createPeriod() {
+    const name = document.getElementById( 'period-name' ).value;
+    const start = document.getElementById( 'period-start' ).value;
+    const end = document.getElementById( 'period-end' ).value;
+    const status = document.getElementById( 'period-status' ).value;
+
+    try {
+      const res = await fetch( '/billing/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify( { name, period_start: start, period_end: end, status } )
+      } );
+
+      const data = await res.json();
+      if ( data.success ) {
+        alert( 'Dönem başarıyla oluşturuldu' );
+        location.reload();
+      } else {
+        alert( 'Hata: ' + ( data.error || 'Bilinmeyen hata' ) );
+      }
+    } catch ( err ) {
+      alert( 'Dönem oluşturma hatası: ' + err.message );
+    }
+  }
+
+  async function togglePeriod( periodId, currentStatus ) {
+    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+    const action = newStatus === 'closed' ? 'kapatılacak' : 'açılacak';
+
+    if ( !confirm( `Bu dönem ${action}. Onaylıyor musunuz?` ) ) return;
+
+    try {
+      const res = await fetch( `/billing/api/periods/${periodId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify( { status: newStatus } )
+      } );
+
+      const data = await res.json();
+      if ( data.success ) {
+        location.reload();
+      } else {
+        alert( 'Hata: ' + ( data.error || 'Bilinmeyen hata' ) );
+      }
+    } catch ( err ) {
+      alert( 'Dönem güncelleme hatası: ' + err.message );
+    }
+  }
+
+  function viewPeriod( periodId ) {
+    location.href = `/billing/?period_id=${periodId}`;
+  }
+</script>
+{% endblock %}

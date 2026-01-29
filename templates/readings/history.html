@@ -1,0 +1,239 @@
+{% extends 'base.html' %} {% block title %}Okuma Geçmişi{% endblock %} {% block
+page_title %}Okuma Geçmişi{% endblock %} {% set breadcrumb = [{'name': 'Okuma
+İşlemleri', 'url': '#'}, {'name': 'Geçmiş'}] %} {% block content %}
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="grid grid-cols-5 gap-4">
+      <div>
+        <label class="form-label">Başlangıç Tarihi</label>
+        <input
+          type="date"
+          id="startDate"
+          class="form-input"
+          value="{{ start_date or '' }}"
+        />
+      </div>
+      <div>
+        <label class="form-label">Bitiş Tarihi</label>
+        <input
+          type="date"
+          id="endDate"
+          class="form-input"
+          value="{{ end_date or '' }}"
+        />
+      </div>
+      <div>
+        <label class="form-label">Sayaç</label>
+        <select id="meterFilter" class="form-select">
+          <option value="">Tümü</option>
+          {% for m in meters or [] %}
+          <option value="{{ m.id }}">{{ m.meter_no }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Durum</label>
+        <select id="statusFilter" class="form-select">
+          <option value="">Tümü</option>
+          <option value="OK">Başarılı</option>
+          <option value="ERROR">Hatalı</option>
+          <option value="PENDING">Beklemede</option>
+        </select>
+      </div>
+      <div style="display: flex; align-items: flex-end">
+        <button
+          class="btn btn-primary"
+          onclick="applyFilters()"
+          style="width: 100%"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          Filtrele
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">{{ stats.total if stats else '15,847' }}</div>
+    <div class="kpi-card-label">Toplam Okuma</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">
+      {{ stats.success if stats else '15,623' }}
+    </div>
+    <div class="kpi-card-label">Başarılı</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">
+      {{ stats.failed if stats else '224' }}
+    </div>
+    <div class="kpi-card-label">Başarısız</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-primary)">
+      {{ stats.rate if stats else '98.6%' }}
+    </div>
+    <div class="kpi-card-label">Başarı Oranı</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-4">
+  <!-- Main Grid -->
+  <div class="card" style="grid-column: span 2">
+    <div class="card-header">
+      <h3 class="card-title">Okuma Kayıtları</h3>
+      <div style="display: flex; gap: 8px">
+        <input
+          type="text"
+          id="searchBox"
+          class="grid-search"
+          placeholder="Ara..."
+          onkeyup="onQuickFilter()"
+        />
+        <button class="grid-export-btn" onclick="exportExcel()">Excel</button>
+        <button class="grid-export-btn" onclick="exportCsv()">CSV</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding: 0">
+      <div
+        id="historyGrid"
+        class="ag-theme-alpine ag-theme-efys"
+        style="height: 500px; width: 100%"
+      ></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Günlük Okuma Trendi</h3>
+    </div>
+    <div class="card-body">
+      <div id="trendChart" class="echart-container" style="height: 220px"></div>
+    </div>
+    <div class="card-header" style="border-top: 1px solid var(--color-border)">
+      <h3 class="card-title">Durum Dağılımı</h3>
+    </div>
+    <div class="card-body">
+      <div
+        id="statusChart"
+        class="echart-container"
+        style="height: 200px"
+      ></div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  var readingsData = {{ readings | tojson | safe if readings else '[]' }};
+
+  if (!readingsData.length) {
+    readingsData = [];
+    for (var i = 0; i < 50; i++) {
+      readingsData.push({
+        id: i + 1,
+        reading_time: new Date(Date.now() - i * 3600000).toISOString(),
+        meter_no: 'ELK-' + String(Math.floor(Math.random() * 30) + 1).padStart(3, '0'),
+        subscriber_name: ['Gönen Yem', 'Bandırma Çelik', 'Marmara Gübre', 'Gönen Tekstil', 'Balıkesir Plastik'][Math.floor(Math.random() * 5)],
+        t1: Math.floor(Math.random() * 500000),
+        t2: Math.floor(Math.random() * 400000),
+        t3: Math.floor(Math.random() * 200000),
+        total: Math.floor(Math.random() * 1000000),
+        pf: (Math.random() * 0.15 + 0.85).toFixed(2),
+        status: Math.random() > 0.02 ? 'OK' : 'ERROR'
+      });
+    }
+  }
+
+  var gridOptions = {
+    columnDefs: [
+      { headerName: 'Tarih', field: 'reading_time', width: 160, valueFormatter: p => new Date(p.value).toLocaleString('tr-TR') },
+      { headerName: 'Sayaç', field: 'meter_no', width: 100 },
+      { headerName: 'Abone', field: 'subscriber_name', flex: 1 },
+      { headerName: 'T1', field: 't1', width: 100, valueFormatter: p => p.value?.toLocaleString('tr-TR') },
+      { headerName: 'T2', field: 't2', width: 100, valueFormatter: p => p.value?.toLocaleString('tr-TR') },
+      { headerName: 'T3', field: 't3', width: 100, valueFormatter: p => p.value?.toLocaleString('tr-TR') },
+      { headerName: 'Toplam', field: 'total', width: 120, valueFormatter: p => p.value?.toLocaleString('tr-TR'), cellStyle: { fontWeight: '600' } },
+      { headerName: 'Cos φ', field: 'pf', width: 80,
+        cellRenderer: p => {
+          var val = parseFloat(p.value);
+          var color = val >= 0.9 ? 'var(--color-success)' : 'var(--color-danger)';
+          return '<span style="color:' + color + '">' + val.toFixed(2) + '</span>';
+        }
+      },
+      { headerName: 'Durum', field: 'status', width: 100,
+        cellRenderer: p => '<span class="badge ' + (p.value === 'OK' ? 'badge-success' : 'badge-danger') + '">' + p.value + '</span>'
+      }
+    ],
+    rowData: readingsData,
+    pagination: true,
+    paginationPageSize: 15,
+    paginationPageSizeSelector: [10, 15, 25, 50, 100],
+    defaultColDef: { sortable: true, resizable: true, filter: true },
+    localeText: AG_GRID_LOCALE_TR
+  };
+
+  var gridApi = agGrid.createGrid(document.getElementById('historyGrid'), gridOptions);
+
+  function onQuickFilter() {
+    gridApi.setGridOption('quickFilterText', document.getElementById('searchBox').value);
+  }
+
+  function exportExcel() { gridApi.exportDataAsExcel({ fileName: 'okuma_gecmisi.xlsx' }); }
+  function exportCsv() { gridApi.exportDataAsCsv({ fileName: 'okuma_gecmisi.csv' }); }
+  function applyFilters() { location.reload(); }
+
+  // Trend Chart
+  var trendChart = echarts.init(document.getElementById('trendChart'));
+  var days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+  trendChart.setOption({
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: days },
+    yAxis: { type: 'value' },
+    series: [{
+      type: 'bar',
+      data: [2150, 2340, 2180, 2450, 2380, 1890, 1560],
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#2563EB' },
+          { offset: 1, color: '#3B82F6' }
+        ]),
+        borderRadius: [4, 4, 0, 0]
+      }
+    }],
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true }
+  });
+
+  // Status Chart
+  var statusChart = echarts.init(document.getElementById('statusChart'));
+  statusChart.setOption({
+    tooltip: { trigger: 'item' },
+    series: [{
+      type: 'pie',
+      radius: ['50%', '75%'],
+      data: [
+        { value: 15623, name: 'Başarılı', itemStyle: { color: '#10B981' } },
+        { value: 224, name: 'Başarısız', itemStyle: { color: '#EF4444' } }
+      ],
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: 14 } }
+    }]
+  });
+
+  window.addEventListener('resize', () => { trendChart.resize(); statusChart.resize(); });
+</script>
+{% endblock %}

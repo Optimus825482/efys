@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+
+<body>
+
+    <table>
+        <thead>
+            <tr>
+                <th>YÖNTEM ADI</th>
+                <th>TANIM VE İŞLEYİŞ</th>
+                <th>FATURA KALEMLERİ VE HESAPLAMA MANTIĞI</th>
+                <th>AVANTAJ VE KISITLAMALAR</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1. Standart OSB Tarifesi (Onaylı Tarife)</strong></td>
+                <td>Katılımcı, elektriği doğrudan OSB'den satın alır. OSB, elektriği toptan (TEİAŞ veya toptan satış
+                    şirketlerinden) alır ve üzerine kendi işletme maliyetlerini ekleyerek katılımcıya satar.</td>
+                <td>
+                    <ul>
+                        <li><strong>Aktif Enerji Bedeli:</strong> OSB'nin elektrik tedarik maliyeti (PTF + YEKDEM) +
+                            Makul bir kâr marjı veya Kurul Onaylı Sabit Fiyat.</li>
+                        <li><strong>OSB Dağıtım Bedeli:</strong> OSB'nin yatırım, personel ve işletme giderlerini
+                            karşılamak için EPDK tarafından onaylanan bedel (kWh başına).</li>
+                        <li><strong>İletim Bedeli:</strong> TEİAŞ'a ödenen bedelin katılımcıya yansıtılması.</li>
+                        <li><strong>Vergiler:</strong> Belediye Tüketim Vergisi (BTV) + KDV.</li>
+                    </ul>
+                </td>
+                <td>
+                    <span class="highlight">Kısıt:</span> OSB'nin uyguladığı fiyat, o bölgedeki görevli tedarik
+                    şirketinin (örneğin BEDAŞ, AYEDAŞ bölgesindeki tarife) sanayi tarifesini <strong>geçemez</strong>.
+                    Sanayiciyi koruyan bir "tavan fiyat" uygulaması vardır.
+                </td>
+            </tr>
+            <tr>
+                <td><strong>2. Serbest Tüketici (İkili Anlaşma) Yöntemi</strong></td>
+                <td>OSB içindeki bir fabrika, elektriğini OSB'den değil, dışarıdaki bir tedarik şirketinden (Enerjisa,
+                    CK Enerji vb.) özel anlaşma ile satın alır. OSB sadece "altyapı sağlayıcısı" konumundadır.</td>
+                <td>
+                    <ul>
+                        <li><strong>Aktif Enerji Bedeli:</strong> Tedarikçi şirket tarafından fatura edilir (OSB
+                            faturasında yer almaz).</li>
+                        <li><strong>Dağıtım Bedeli (Kullanım Bedeli):</strong> Elektriği kimden alırsa alsın, OSB
+                            şebekesini kullandığı için OSB'ye ödenir.</li>
+                        <li><strong>İletim Bedeli:</strong> TEİAŞ iletim bedelinin payına düşen kısmı OSB tarafından
+                            fatura edilir.</li>
+                        <li><strong>Reaktif Ceza:</strong> Kompanzasyon panosu düzgün çalışmazsa OSB ceza keser.</li>
+                    </ul>
+                </td>
+                <td>
+                    Büyük tüketimi olan fabrikalar için avantajlıdır. Enerji fiyatını piyasadan ucuza bulabilirler ancak
+                    OSB'ye yine de "Kullanım Bedeli" ödemek zorundadırlar.
+                </td>
+            </tr>
+            <tr>
+                <td><strong>3. Son Kaynak Tedarik Tarifesi (SKTT)</strong></td>
+                <td>Yıllık tüketimi çok yüksek olan (EPDK limitlerini aşan) tüketiciler için uygulanır. Sabit bir tarife
+                    yerine piyasa takas fiyatına endeksli dinamik bir fiyattır.</td>
+                <td>
+                    <ul>
+                        <li><strong>Formül:</strong> (PTF + YEKDEM) x KBK (Kurulca Belirlenen Katsayı).</li>
+                        <li><strong>Dağıtım ve İletim:</strong> Standart tarifedeki gibi eklenir.</li>
+                    </ul>
+                </td>
+                <td>
+                    Sabit fiyat garantisi yoktur. Elektrik piyasası fiyatları artarsa fatura yükselir, düşerse azalır.
+                    Genellikle çok büyük sanayi tesisleri bu kapsama girer.
+                </td>
+            </tr>
+            <tr>
+                <td><strong>4. Yenilenebilir Enerji (GES) Mahsuplaşması</strong></td>
+                <td>Fabrikanın çatısında GES (Güneş Enerjisi) varsa uygulanır. Üretilen ve tüketilen elektrik aylık
+                    bazda mahsuplaşılır.</td>
+                <td>
+                    <ul>
+                        <li><strong>Hesap:</strong> (Şebekeden Çekilen - Şebekeye Verilen).</li>
+                        <li><strong>Fazla Üretim:</strong> Şebekeye verilen fazla enerji varsa, OSB bunu katılımcıdan
+                            belirli bir fiyattan satın alır veya alacak kaydeder.</li>
+                        <li><strong>Dağıtım Bedeli:</strong> Genellikle hem çekilen hem de (bazı durumlarda) verilen
+                            enerji üzerinden sistem kullanım bedeli hesaplanır (mevzuata göre değişebilir).</li>
+                    </ul>
+                </td>
+                <td>
+                    Enerji maliyetlerini düşürmenin en etkili yoludur. Ancak "Dağıtım Bedeli"nin mahsuplaşma sonrası net
+                    tüketime mi yoksa toplam çekişe mi uygulanacağı EPDK yönetmeliğine göre kritiktir.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+
+</html>

@@ -1,0 +1,554 @@
+{% extends 'base.html' %}
+{% block title %}Mevzuat Takip{% endblock %}
+{% block page_title %}Mevzuat Takip Sistemi{% endblock %}
+{% set breadcrumb = [{'name': 'Akıllı Sistemler', 'url': '#'}, {'name': 'Mevzuat Takip'}] %}
+
+{% block content %}
+<!-- Header with Scan Button -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <p style="color: var(--color-text-secondary); margin: 0;">
+            EPDK, Resmi Gazete ve diğer kaynaklardan mevzuat değişikliklerini izleyin
+        </p>
+    </div>
+    <button class="btn btn-primary" onclick="scanSources()" id="scan-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Şimdi Tara
+    </button>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-4 gap-4 mb-4">
+    <div class="kpi-card">
+        <div class="kpi-card-icon danger">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+        </div>
+        <div class="kpi-card-value" style="color: var(--color-danger)">{{ stats.unread_count or 0 }}</div>
+        <div class="kpi-card-label">Okunmamış Uyarı</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-icon warning">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+        </div>
+        <div class="kpi-card-value" style="color: var(--color-warning)">{{ stats.important_count or 0 }}</div>
+        <div class="kpi-card-label">Önemli İşaretli</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-icon primary">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+        </div>
+        <div class="kpi-card-value" style="color: var(--color-primary)">{{ stats.week_count or 0 }}</div>
+        <div class="kpi-card-label">Bu Hafta</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-icon success">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+            </svg>
+        </div>
+        <div class="kpi-card-value" style="color: var(--color-success)">{{ stats.active_sources or 0 }}</div>
+        <div class="kpi-card-label">Aktif Kaynak</div>
+    </div>
+</div>
+
+<!-- Tab Navigation -->
+<div class="card mb-4">
+    <div class="card-body" style="padding: 0;">
+        <div style="display: flex; border-bottom: 1px solid var(--color-border);">
+            <button class="tab-btn active" onclick="showTab('alerts')" id="tab-alerts">
+                🔔 Uyarılar
+            </button>
+            <button class="tab-btn" onclick="showTab('sources')" id="tab-sources">
+                🌐 Kaynaklar
+            </button>
+            <button class="tab-btn" onclick="showTab('keywords')" id="tab-keywords">
+                🔑 Anahtar Kelimeler
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 1: Alerts -->
+<div id="panel-alerts" class="tab-panel active">
+    <div class="card">
+        <div class="card-header">
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="loadAlerts(false, false)">Tümü</button>
+                <button class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: var(--color-danger);"
+                    onclick="loadAlerts(true, false)">Okunmamış</button>
+                <button class="btn btn-sm" style="background: rgba(245, 158, 11, 0.1); color: var(--color-warning);"
+                    onclick="loadAlerts(false, true)">Önemli</button>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="markAllRead()">Tümünü Okundu İşaretle</button>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            {% if alerts %}
+            <div style="display: flex; flex-direction: column;">
+                {% for alert in alerts %}
+                <div class="alert-item" data-id="{{ alert.id }}" style="
+                    padding: 16px 20px;
+                    border-bottom: 1px solid var(--color-border);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    background: {{ 'rgba(59, 130, 246, 0.05)' if not alert.is_read else 'transparent' }};
+                    {{ 'border-left: 4px solid var(--color-warning);' if alert.is_important else '' }}
+                ">
+                    <div style="flex: 1;">
+                        <div style="display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <span class="badge badge-info">{{ alert.source_name }}</span>
+                            {% if not alert.is_read %}
+                            <span class="badge badge-danger">Yeni</span>
+                            {% endif %}
+                            {% if alert.matched_keywords %}
+                            {% for kw in alert.matched_keywords %}
+                            <span class="badge" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">{{ kw
+                                }}</span>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                        <a href="{{ alert.url }}" target="_blank" style="
+                            font-weight: 500;
+                            color: var(--color-text-primary);
+                            text-decoration: none;
+                            display: block;
+                            margin-bottom: 4px;
+                        " class="alert-title">{{ alert.title }}</a>
+                        <span style="font-size: 0.8rem; color: var(--color-text-secondary);">
+                            {{ alert.found_at.strftime('%d.%m.%Y %H:%M') if alert.found_at else '' }}
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 4px; margin-left: 16px;">
+                        <button onclick="toggleImportant({{ alert.id }})" class="btn btn-secondary btn-sm"
+                            title="Önemli İşaretle" style="padding: 6px 8px;">
+                            {{ '⭐' if alert.is_important else '☆' }}
+                        </button>
+                        {% if not alert.is_read %}
+                        <button onclick="markRead({{ alert.id }})" class="btn btn-sm"
+                            style="background: rgba(34, 197, 94, 0.1); color: var(--color-success); padding: 6px 8px;"
+                            title="Okundu İşaretle">
+                            ✓
+                        </button>
+                        {% endif %}
+                        <button onclick="deleteAlert({{ alert.id }})" class="btn btn-sm"
+                            style="background: rgba(239, 68, 68, 0.1); color: var(--color-danger); padding: 6px 8px;"
+                            title="Sil">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 48px 20px; color: var(--color-text-secondary);">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    style="margin: 0 auto 16px; opacity: 0.5;">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 01-3.46 0" />
+                </svg>
+                <p style="font-weight: 500; margin-bottom: 8px;">Henüz mevzuat uyarısı bulunmuyor</p>
+                <p style="font-size: 0.9rem;">Kaynakları taramak için "Şimdi Tara" butonuna tıklayın</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- TAB 2: Sources -->
+<div id="panel-sources" class="tab-panel" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Mevzuat Kaynakları</h3>
+            <button class="btn btn-primary" onclick="showAddSourceModal()">+ Yeni Kaynak</button>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Kaynak Adı</th>
+                        <th>URL</th>
+                        <th>Tip</th>
+                        <th>Son Kontrol</th>
+                        <th>Durum</th>
+                        <th style="text-align: right;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for src in sources %}
+                    <tr data-id="{{ src.id }}">
+                        <td style="font-weight: 500;">{{ src.name }}</td>
+                        <td>
+                            <a href="{{ src.url }}" target="_blank"
+                                style="color: var(--color-primary); text-decoration: none;">
+                                {{ src.url[:50] }}{% if src.url|length > 50 %}...{% endif %}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ src.source_type|upper }}</span>
+                        </td>
+                        <td style="color: var(--color-text-secondary);">
+                            {{ src.last_checked_at.strftime('%d.%m.%Y %H:%M') if src.last_checked_at else 'Hiç' }}
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if src.is_active else 'badge-secondary' }}">
+                                {{ 'Aktif' if src.is_active else 'Pasif' }}
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            <button onclick="toggleSource({{ src.id }}, {{ 'false' if src.is_active else 'true' }})"
+                                class="btn btn-secondary btn-sm">
+                                {{ 'Durdur' if src.is_active else 'Aktifleştir' }}
+                            </button>
+                            <button onclick="deleteSource({{ src.id }})" class="btn btn-sm"
+                                style="background: rgba(239, 68, 68, 0.1); color: var(--color-danger);">
+                                Sil
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 3: Keywords -->
+<div id="panel-keywords" class="tab-panel" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Anahtar Kelimeler</h3>
+            <button class="btn btn-primary" onclick="showAddKeywordModal()">+ Yeni Kelime</button>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-4 gap-3">
+                {% for kw in keywords %}
+                <div class="keyword-card" data-id="{{ kw.id }}" style="
+                    background: var(--color-surface-raised);
+                    border: 1px solid var(--color-border);
+                    border-radius: 8px;
+                    padding: 12px 16px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    {{ 'opacity: 0.6;' if not kw.is_active else '' }}
+                ">
+                    <div>
+                        <span style="font-weight: 500; color: var(--color-text-primary);">{{ kw.keyword }}</span>
+                        <span
+                            class="badge {{ 'badge-danger' if kw.priority == 1 else 'badge-info' if kw.priority == 2 else 'badge-secondary' }}"
+                            style="margin-left: 8px;">
+                            P{{ kw.priority }}
+                        </span>
+                    </div>
+                    <button onclick="deleteKeyword({{ kw.id }})" style="
+                        background: none;
+                        border: none;
+                        color: var(--color-danger);
+                        cursor: pointer;
+                        font-size: 1.2rem;
+                        padding: 4px;
+                    ">×</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Source Modal -->
+<div id="source-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeModal('source-modal')"></div>
+    <div class="modal-content" style="max-width: 480px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Yeni Kaynak Ekle</h3>
+            <button class="modal-close" onclick="closeModal('source-modal')">×</button>
+        </div>
+        <form id="source-form" onsubmit="addSource(event)">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Kaynak Adı</label>
+                    <input type="text" name="name" required class="form-input" placeholder="EPDK Duyurular">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">URL</label>
+                    <input type="url" name="url" required class="form-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tip</label>
+                    <select name="source_type" class="form-select">
+                        <option value="web">Web Sayfası</option>
+                        <option value="rss">RSS Feed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('source-modal')">İptal</button>
+                <button type="submit" class="btn btn-primary">Ekle</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Keyword Modal -->
+<div id="keyword-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeModal('keyword-modal')"></div>
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Yeni Anahtar Kelime</h3>
+            <button class="modal-close" onclick="closeModal('keyword-modal')">×</button>
+        </div>
+        <form id="keyword-form" onsubmit="addKeyword(event)">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Anahtar Kelime</label>
+                    <input type="text" name="keyword" required class="form-input" placeholder="Dağıtım Bedeli">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Öncelik</label>
+                    <select name="priority" class="form-select">
+                        <option value="1">Yüksek (P1)</option>
+                        <option value="2">Normal (P2)</option>
+                        <option value="3">Düşük (P3)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('keyword-modal')">İptal</button>
+                <button type="submit" class="btn btn-primary">Ekle</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    /* Alert Title Hover */
+    .alert-title:hover {
+        color: var(--color-primary) !important;
+    }
+
+    /* Modal Styles */
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        position: relative;
+        background: var(--color-surface);
+        border-radius: 12px;
+        box-shadow: var(--shadow-xl);
+        width: 100%;
+        margin: 20px;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        color: var(--color-text-primary);
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 20px;
+        border-top: 1px solid var(--color-border);
+    }
+</style>
+
+<script>
+    // Tab Management
+    function showTab( tabName ) {
+        document.querySelectorAll( '.tab-btn' ).forEach( btn => btn.classList.remove( 'active' ) );
+        document.querySelectorAll( '.tab-panel' ).forEach( panel => panel.style.display = 'none' );
+
+        document.getElementById( `tab-${tabName}` ).classList.add( 'active' );
+        document.getElementById( `panel-${tabName}` ).style.display = 'block';
+    }
+
+    // Modal Management
+    function showAddSourceModal() {
+        document.getElementById( 'source-modal' ).style.display = 'flex';
+    }
+
+    function showAddKeywordModal() {
+        document.getElementById( 'keyword-modal' ).style.display = 'flex';
+    }
+
+    function closeModal( id ) {
+        document.getElementById( id ).style.display = 'none';
+    }
+
+    // API Calls
+    async function scanSources() {
+        const btn = document.getElementById( 'scan-btn' );
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '⟳ Taranıyor...';
+
+        try {
+            const res = await fetch( '/settings/api/mevzuat/scan', { method: 'POST' } );
+            const data = await res.json();
+            if ( data.success ) {
+                alert( `Tarama tamamlandı!\n${data.data.scanned} kaynak tarandı\n${data.data.new_alerts} yeni uyarı bulundu` );
+                location.reload();
+            } else {
+                alert( 'Hata: ' + ( data.error || 'Bilinmeyen hata' ) );
+            }
+        } catch ( e ) {
+            alert( 'Tarama hatası: ' + e.message );
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+
+    async function loadAlerts( unreadOnly, importantOnly ) {
+        const params = new URLSearchParams();
+        if ( unreadOnly ) params.set( 'unread', 'true' );
+        if ( importantOnly ) params.set( 'important', 'true' );
+        location.href = location.pathname + '?' + params.toString();
+    }
+
+    async function markRead( alertId ) {
+        await fetch( `/settings/api/mevzuat/alerts/${alertId}/read`, { method: 'POST' } );
+        const el = document.querySelector( `.alert-item[data-id="${alertId}"]` );
+        if ( el ) {
+            el.style.background = 'transparent';
+            el.querySelector( '.badge-danger' )?.remove();
+        }
+    }
+
+    async function markAllRead() {
+        await fetch( '/settings/api/mevzuat/alerts/read-all', { method: 'POST' } );
+        location.reload();
+    }
+
+    async function toggleImportant( alertId ) {
+        await fetch( `/settings/api/mevzuat/alerts/${alertId}/important`, { method: 'POST' } );
+        location.reload();
+    }
+
+    async function deleteAlert( alertId ) {
+        if ( !confirm( 'Bu uyarıyı silmek istediğinizden emin misiniz?' ) ) return;
+        await fetch( `/settings/api/mevzuat/alerts/${alertId}`, { method: 'DELETE' } );
+        document.querySelector( `.alert-item[data-id="${alertId}"]` )?.remove();
+    }
+
+    async function addSource( e ) {
+        e.preventDefault();
+        const form = e.target;
+        const data = Object.fromEntries( new FormData( form ) );
+
+        const res = await fetch( '/settings/api/mevzuat/sources', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify( data )
+        } );
+
+        if ( ( await res.json() ).success ) {
+            location.reload();
+        }
+    }
+
+    async function toggleSource( sourceId, active ) {
+        await fetch( `/settings/api/mevzuat/sources/${sourceId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify( { is_active: active } )
+        } );
+        location.reload();
+    }
+
+    async function deleteSource( sourceId ) {
+        if ( !confirm( 'Bu kaynağı ve ilgili tüm uyarıları silmek istediğinizden emin misiniz?' ) ) return;
+        await fetch( `/settings/api/mevzuat/sources/${sourceId}`, { method: 'DELETE' } );
+        location.reload();
+    }
+
+    async function addKeyword( e ) {
+        e.preventDefault();
+        const form = e.target;
+        const data = Object.fromEntries( new FormData( form ) );
+        data.priority = parseInt( data.priority );
+
+        const res = await fetch( '/settings/api/mevzuat/keywords', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify( data )
+        } );
+
+        if ( ( await res.json() ).success ) {
+            location.reload();
+        }
+    }
+
+    async function deleteKeyword( keywordId ) {
+        if ( !confirm( 'Bu anahtar kelimeyi silmek istediğinizden emin misiniz?' ) ) return;
+        await fetch( `/settings/api/mevzuat/keywords/${keywordId}`, { method: 'DELETE' } );
+        document.querySelector( `.keyword-card[data-id="${keywordId}"]` )?.remove();
+    }
+
+    // Close modal on ESC
+    document.addEventListener( 'keydown', ( e ) => {
+        if ( e.key === 'Escape' ) {
+            document.querySelectorAll( '.modal' ).forEach( m => m.style.display = 'none' );
+        }
+    } );
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'base.html' %} {% block title %}Kayıp/Kaçak Raporu{% endblock %} {%
+block page_title %}Kayıp/Kaçak Raporu{% endblock %} {% set breadcrumb =
+[{'name': 'Raporlama'}, {'name': 'Kayıp/Kaçak'}] %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpi-input">0 kWh</div>
+    <div class="kpi-card-label">Giriş Enerji (Ana Sayaç)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpi-sold">0 kWh</div>
+    <div class="kpi-card-label">Satılan Enerji (Aboneler)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)" id="kpi-loss">0 kWh</div>
+    <div class="kpi-card-label">Toplam Kayıp</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)" id="kpi-rate">0%</div>
+    <div class="kpi-card-label">Kayıp Oranı</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Aylık Kayıp Trendi</h3>
+    </div>
+    <div class="card-body">
+      <div id="trendChart" style="height: 300px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Kayıp Türleri</h3>
+    </div>
+    <div class="card-body">
+      <div id="typeChart" style="height: 300px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Aylık Kayıp Detayı</h3>
+    </div>
+    <div class="card-body" style="padding: 0">
+      <div id="monthlyGrid" class="ag-theme-alpine ag-theme-efys" style="height: 300px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Abone Bazlı Kayıp Payları</h3>
+      <a href="{{ url_for('monitoring.loss_analysis') }}" class="btn btn-secondary btn-sm">Detaylı Analiz →</a>
+    </div>
+    <div class="card-body" style="padding: 0">
+      <div id="subscriberGrid" class="ag-theme-alpine ag-theme-efys" style="height: 300px"></div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data from get_osb_loss_report
+  var reportData = {{ report | tojson | safe if report else '{}' }};
+  var monthlyData = reportData.monthly || [];
+  var currentData = reportData.current || {};
+  var subscriberData = reportData.subscribers || [];
+
+  // Update KPI Cards with current period data
+  document.getElementById( 'kpi-input' ).textContent = ( currentData.input || 0 ).toLocaleString( 'tr-TR' ) + ' kWh';
+  document.getElementById( 'kpi-sold' ).textContent = ( currentData.sold || 0 ).toLocaleString( 'tr-TR' ) + ' kWh';
+  document.getElementById( 'kpi-loss' ).textContent = ( currentData.loss || 0 ).toLocaleString( 'tr-TR' ) + ' kWh';
+  document.getElementById( 'kpi-rate' ).textContent = ( currentData.loss_rate || 0 ).toFixed( 2 ) + '%';
+
+  // Trend Chart
+  var trendChart = echarts.init( document.getElementById( "trendChart" ) );
+  trendChart.setOption( {
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    xAxis: { type: "category", data: monthlyData.map( d => d.month ) },
+    yAxis: [
+      {
+        type: "value",
+        name: "kWh",
+        axisLabel: { formatter: ( v ) => ( v / 1000000 ).toFixed( 1 ) + "M" },
+      },
+      { type: "value", name: "%", max: Math.max( ...monthlyData.map( d => parseFloat( d.loss_rate ) || 0 ), 5 ) * 1.2 },
+    ],
+    series: [
+      {
+        name: "Kayıp (kWh)",
+        type: "bar",
+        data: monthlyData.map( d => d.loss ),
+        itemStyle: { color: "#EF4444" },
+      },
+      {
+        name: "Oran (%)",
+        type: "line",
+        yAxisIndex: 1,
+        data: monthlyData.map( d => d.loss_rate ),
+        smooth: true,
+        lineStyle: { color: "#F59E0B", width: 2 },
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "12%", containLabel: true },
+  } );
+
+  // Loss Type Pie Chart
+  var typeChart = echarts.init( document.getElementById( "typeChart" ) );
+  var totalLoss = currentData.loss || 0;
+  typeChart.setOption( {
+    tooltip: { trigger: "item", formatter: '{b}: {c} kWh ({d}%)' },
+    series: [
+      {
+        type: "pie",
+        radius: ["50%", "75%"],
+        data: [
+          { value: Math.round( totalLoss * 0.65 ), name: "Teknik Kayıp", itemStyle: { color: "#3B82F6" } },
+          { value: Math.round( totalLoss * 0.25 ), name: "Ölçüm Hatası", itemStyle: { color: "#F59E0B" } },
+          { value: Math.round( totalLoss * 0.10 ), name: "Kaçak Şüphesi", itemStyle: { color: "#EF4444" } },
+        ],
+        label: { formatter: '{b}\n{d}%' }
+      },
+    ],
+  } );
+
+  // Monthly Grid
+  agGrid.createGrid( document.getElementById( "monthlyGrid" ), {
+    columnDefs: [
+      { headerName: "Dönem", field: "month", flex: 1 },
+      { headerName: "Giriş", field: "input", width: 120, valueFormatter: p => ( p.value / 1000000 ).toFixed( 2 ) + 'M' },
+      { headerName: "Satılan", field: "sold", width: 120, valueFormatter: p => ( p.value / 1000000 ).toFixed( 2 ) + 'M' },
+      { headerName: "Kayıp", field: "loss", width: 100, valueFormatter: p => ( p.value / 1000 ).toFixed( 0 ) + 'K', cellStyle: { color: "#EF4444" } },
+      { headerName: "Oran", field: "loss_rate", width: 80, valueFormatter: p => p.value?.toFixed( 2 ) + '%', cellStyle: { color: "#F59E0B", fontWeight: "600" } },
+    ],
+    rowData: monthlyData,
+    localeText: AG_GRID_LOCALE_TR,
+  } );
+
+  // Subscriber Grid
+  agGrid.createGrid( document.getElementById( "subscriberGrid" ), {
+    columnDefs: [
+      { headerName: "Abone", field: "name", flex: 1 },
+      { headerName: "Sektör", field: "sector", width: 90 },
+      { headerName: "Tüketim", field: "consumption", width: 100, valueFormatter: p => ( p.value / 1000 ).toFixed( 0 ) + 'K' },
+      { headerName: "Kayıp Payı", field: "loss_share", width: 100, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) + ' kWh', cellStyle: { color: "#EF4444" } },
+      { headerName: "%", field: "share_percent", width: 60, valueFormatter: p => p.value?.toFixed( 1 ) + '%' },
+    ],
+    rowData: subscriberData.slice( 0, 20 ), // Top 20
+    localeText: AG_GRID_LOCALE_TR,
+  } );
+
+  window.addEventListener( "resize", () => { trendChart.resize(); typeChart.resize(); } );
+</script>
+{% endblock %}

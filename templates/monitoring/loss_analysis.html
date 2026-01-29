@@ -1,0 +1,202 @@
+{% extends 'base.html' %} {% block title %}Kayıp/Kaçak Analizi{% endblock %} {%
+block page_title %}Kayıp/Kaçak Analizi{% endblock %} {% set breadcrumb =
+[{'name': 'Veri İzleme'}, {'name': 'Kayıp/Kaçak'}] %} {% block content %}
+<!-- KPI Cards - Gerçek OSB verileri -->
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpiInput">{{ '{:,.0f}'.format(current.input|default(0)) }} kWh</div>
+    <div class="kpi-card-label">Giriş Enerji (Ana Sayaç)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpiSold">{{ '{:,.0f}'.format(current.sold|default(0)) }} kWh</div>
+    <div class="kpi-card-label">Satılan Enerji (Aboneler)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpiLoss" style="color: var(--color-danger)">
+      {{ '{:,.0f}'.format(current.loss|default(0)) }} kWh
+    </div>
+    <div class="kpi-card-label">Teknik Kayıp</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpiRate" style="color: var(--color-warning)">{{ current.loss_rate|default(0) }}%
+    </div>
+    <div class="kpi-card-label">Kayıp Oranı</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Aylık Kayıp Trendi</h3>
+    </div>
+    <div class="card-body">
+      <div id="trendChart" style="height: 300px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Aylık Kayıp Oranı</h3>
+    </div>
+    <div class="card-body">
+      <div id="lossRateChart" style="height: 300px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Abone Bazlı Kayıp Payları -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Abone Kayıp Payları</h3>
+    <p class="text-sm text-gray-500">Son 30 gün - Her abonenin teknik kayıptan aldığı pay</p>
+  </div>
+  <div class="card-body">
+    <div id="subscriberGrid" style="height: 400px" class="ag-theme-alpine"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data
+  var gridData = {{ analysis | tojson | safe if analysis else '[]' }};
+  var monthlyData = {{ monthly | tojson | safe if monthly else '[]' }};
+  var currentData = {{ current | tojson | safe if current else '{}' }};
+
+  // Trend Chart - Giriş vs Satılan
+  var trendChart = echarts.init( document.getElementById( "trendChart" ) );
+  trendChart.setOption( {
+    tooltip: {
+      trigger: "axis",
+      formatter: function ( params ) {
+        var result = params[0].axisValue + '<br/>';
+        params.forEach( function ( p ) {
+          result += p.marker + ' ' + p.seriesName + ': ' + p.value.toLocaleString( 'tr-TR' ) + ' kWh<br/>';
+        } );
+        return result;
+      }
+    },
+    legend: { bottom: 0 },
+    xAxis: {
+      type: "category",
+      data: monthlyData.map( m => m.month )
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: { formatter: ( v ) => ( v / 1000 ).toFixed( 0 ) + "K" }
+    },
+    series: [
+      {
+        name: "Giriş (Ana Sayaç)",
+        type: "bar",
+        data: monthlyData.map( m => m.input || 0 ),
+        itemStyle: { color: "#3B82F6" },
+      },
+      {
+        name: "Satılan (Aboneler)",
+        type: "bar",
+        data: monthlyData.map( m => m.sold || 0 ),
+        itemStyle: { color: "#10B981" },
+      },
+      {
+        name: "Teknik Kayıp",
+        type: "bar",
+        data: monthlyData.map( m => m.loss || 0 ),
+        itemStyle: { color: "#EF4444" },
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "15%", containLabel: true },
+  } );
+
+  // Loss Rate Chart - Aylık kayıp oranı trendi
+  var lossRateChart = echarts.init( document.getElementById( "lossRateChart" ) );
+  lossRateChart.setOption( {
+    tooltip: {
+      trigger: "axis",
+      formatter: function ( params ) {
+        return params[0].axisValue + '<br/>' +
+          params[0].marker + ' Kayıp Oranı: ' + params[0].value.toFixed( 2 ) + '%';
+      }
+    },
+    xAxis: {
+      type: "category",
+      data: monthlyData.map( m => m.month )
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: { formatter: '{value}%' },
+      max: function ( value ) {
+        return Math.ceil( value.max * 1.2 );
+      }
+    },
+    series: [
+      {
+        name: "Kayıp Oranı",
+        type: "line",
+        data: monthlyData.map( m => parseFloat( m.loss_rate ) || 0 ),
+        smooth: true,
+        areaStyle: { opacity: 0.3 },
+        itemStyle: { color: "#F59E0B" },
+        lineStyle: { width: 3 },
+        markLine: {
+          data: [
+            {
+              yAxis: 3,
+              name: 'Hedef',
+              lineStyle: { color: '#EF4444', type: 'dashed' },
+              label: { formatter: 'Hedef: 3%' }
+            }
+          ]
+        }
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "10%", containLabel: true },
+  } );
+
+  // Subscriber Loss Share Grid
+  var gridOptions = {
+    columnDefs: [
+      { field: "subscriber_code", headerName: "Abone No", width: 120, pinned: 'left' },
+      { field: "name", headerName: "Abone Adı", flex: 1, minWidth: 200 },
+      { field: "sector", headerName: "Sektör", width: 120 },
+      {
+        field: "consumption",
+        headerName: "Tüketim (kWh)",
+        width: 140,
+        type: 'numericColumn',
+        valueFormatter: params => params.value ? params.value.toLocaleString( 'tr-TR' ) : '0'
+      },
+      {
+        field: "share_percent",
+        headerName: "Pay Oranı (%)",
+        width: 120,
+        type: 'numericColumn',
+        valueFormatter: params => params.value ? params.value.toFixed( 2 ) + '%' : '0%'
+      },
+      {
+        field: "loss_share",
+        headerName: "Kayıp Payı (kWh)",
+        width: 150,
+        type: 'numericColumn',
+        cellStyle: { color: '#EF4444', fontWeight: 'bold' },
+        valueFormatter: params => params.value ? params.value.toLocaleString( 'tr-TR', { maximumFractionDigits: 1 } ) : '0'
+      }
+    ],
+    rowData: gridData,
+    defaultColDef: {
+      sortable: true,
+      filter: true,
+      resizable: true
+    },
+    localeText: AG_GRID_LOCALE_TR,
+    pagination: true,
+    paginationPageSize: 15
+  };
+
+  var gridDiv = document.getElementById( "subscriberGrid" );
+  agGrid.createGrid( gridDiv, gridOptions );
+
+  // Resize handlers
+  window.addEventListener( "resize", () => {
+    trendChart.resize();
+    lossRateChart.resize();
+  } );
+</script>
+{% endblock %}

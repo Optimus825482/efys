@@ -1,0 +1,115 @@
+{% extends 'base.html' %} {% block title %}Akıllı Sistemler{% endblock %} {%
+block page_title %}Akıllı Sistemler{% endblock %} {% block content %}
+<div class="grid grid-cols-3 gap-4">
+  <a
+    href="{{ url_for('smart.demand_prediction') }}"
+    class="card"
+    style="cursor: pointer"
+  >
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-primary-100);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-primary);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M3 3v18h18" />
+          <path d="M18 17l-6-6-4 4-5-5" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Talep Tahmini
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        AI destekli tüketim tahmini
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('smart.anomaly') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-danger-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-danger);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Anomali Tespiti
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Kaçak/Hata tespiti
+      </div>
+    </div>
+  </a>
+  <a href="{{ url_for('smart.alerts') }}" class="card" style="cursor: pointer">
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-warning-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-warning);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 01-3.46 0" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Alarm Kuralları
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Otomatik uyarılar
+      </div>
+    </div>
+  </a>
+</div>
+{% endblock %}

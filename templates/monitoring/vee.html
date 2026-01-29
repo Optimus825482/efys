@@ -1,0 +1,241 @@
+{% extends 'base.html' %} {% block title %}VEE Doğrulama{% endblock %} {% block
+page_title %}VEE Doğrulama{% endblock %} {% set breadcrumb = [{'name': 'Veri
+İzleme'}, {'name': 'VEE'}] %} {% block content %}
+<div class="alert alert-info mb-4">
+  <strong>VEE:</strong> Validation, Estimation, Editing - Okuma verilerinin
+  doğrulanması ve düzeltilmesi sürecidir.
+</div>
+
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">{{ (vee_stats.total if vee_stats else 0) | int | string | replace(',', '.') }}</div>
+    <div class="kpi-card-label">Toplam Okuma</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">{{ (vee_stats.verified if vee_stats else 0) | int |
+      string | replace(',', '.') }}</div>
+    <div class="kpi-card-label">Doğrulanmış</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)">{{ (vee_stats.estimated if vee_stats else 0) | int |
+      string | replace(',', '.') }}</div>
+    <div class="kpi-card-label">Tahmin Edilmiş</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">{{ (vee_stats.pending if vee_stats else 0) | int |
+      string | replace(',', '.') }}</div>
+    <div class="kpi-card-label">Düzeltme Bekliyor</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">VEE Durumu</h3>
+    </div>
+    <div class="card-body">
+      <div id="statusChart" style="height: 280px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Günlük VEE Aktivitesi</h3>
+    </div>
+    <div class="card-body">
+      <div id="activityChart" style="height: 280px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Düzeltme Bekleyen Okumalar</h3>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-warning btn-sm" onclick="estimateSelectedVee()">Seçilenleri Tahmin Et</button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="grid" class="ag-theme-alpine ag-theme-efys" style="height: 350px"></div>
+  </div>
+</div>
+
+<!-- Estimation Modal -->
+<div id="veeEstimationModal" class="modal" style="display: none">
+  <div class="modal-content" style="max-width: 600px">
+    <div class="modal-header">
+      <h3>VEE Tahmini</h3>
+      <button class="modal-close" onclick="closeVeeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tahmin Yöntemi</label>
+        <select id="veeEstimationMethod" class="form-select">
+          <option value="linear">Lineer İnterpolasyon</option>
+          <option value="average">Geçmiş Ortalama</option>
+          <option value="previous">Önceki Değer</option>
+          <option value="next">Sonraki Değer</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notlar</label>
+        <textarea id="veeEstimationNotes" class="form-input" rows="3"
+          placeholder="Tahmin ile ilgili notlar..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeVeeModal()">İptal</button>
+      <button class="btn btn-primary" onclick="confirmVeeEstimation()">Tahmin Et</button>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data
+  var veeStats = {{ vee_stats | tojson | safe if vee_stats else '{}' }};
+  var trendData = {{ trend | tojson | safe if trend else '[]' }};
+  var correctionData = {{ corrections | tojson | safe if corrections else '[]' }};
+
+  var statusChart = echarts.init( document.getElementById( "statusChart" ) );
+  statusChart.setOption( {
+    tooltip: { trigger: "item" },
+    series: [
+      {
+        type: "pie",
+        radius: ["50%", "75%"],
+        data: [
+          {
+            value: veeStats.verified || 0,
+            name: "Doğrulanmış",
+            itemStyle: { color: "#10B981" },
+          },
+          { value: veeStats.estimated || 0, name: "Tahmin", itemStyle: { color: "#F59E0B" } },
+          { value: veeStats.pending || 0, name: "Beklemede", itemStyle: { color: "#EF4444" } },
+        ],
+      },
+    ],
+  } );
+
+  var activityChart = echarts.init( document.getElementById( "activityChart" ) );
+  activityChart.setOption( {
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    xAxis: { type: "category", data: trendData.map( d => d.date ) },
+    yAxis: { type: "value" },
+    series: [
+      {
+        name: "Doğrulama",
+        type: "bar",
+        stack: "a",
+        data: trendData.map( d => d.verified ),
+        itemStyle: { color: "#10B981" },
+      },
+      {
+        name: "Tahmin",
+        type: "bar",
+        stack: "a",
+        data: trendData.map( d => d.estimated ),
+        itemStyle: { color: "#F59E0B" },
+      },
+      {
+        name: "Düzeltme",
+        type: "bar",
+        stack: "a",
+        data: trendData.map( d => d.pending ),
+        itemStyle: { color: "#EF4444" },
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "15%", containLabel: true },
+  } );
+
+  var veeGrid = agGrid.createGrid( document.getElementById( "grid" ), {
+    columnDefs: [
+      {
+        headerName: "",
+        field: "id",
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
+        width: 50,
+      },
+      { headerName: "Sayaç", field: "meter_no", width: 100 },
+      { headerName: "Abone", field: "subscriber_name", flex: 1 },
+      { headerName: "Zaman", field: "reading_time", width: 140, valueFormatter: p => p.value ? new Date( p.value ).toLocaleString( 'tr-TR' ) : '' },
+      {
+        headerName: "Sorun",
+        field: "issue_type",
+        width: 120,
+        cellRenderer: ( p ) =>
+          '<span class="badge badge-danger">' + p.value + "</span>",
+      },
+      {
+        headerName: "Orijinal",
+        field: "original_value",
+        width: 110,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "Düzeltilmiş",
+        field: "corrected_value",
+        width: 110,
+        editable: true,
+      },
+      {
+        headerName: "İşlem",
+        width: 100,
+        cellRenderer: () =>
+          '<button class="btn btn-primary btn-sm">Kaydet</button>',
+      },
+    ],
+    rowData: correctionData,
+    localeText: AG_GRID_LOCALE_TR,
+    rowSelection: "multiple",
+  } );
+
+  let currentVeeRows = [];
+
+  function estimateSelectedVee() {
+    const selected = veeGrid.getSelectedRows ? veeGrid.getSelectedRows() : [];
+    if ( !selected || selected.length === 0 ) {
+      return alert( 'Lütfen veri seçin' );
+    }
+    currentVeeRows = selected;
+    document.getElementById( 'veeEstimationModal' ).style.display = 'flex';
+  }
+
+  function closeVeeModal() {
+    document.getElementById( 'veeEstimationModal' ).style.display = 'none';
+    document.getElementById( 'veeEstimationMethod' ).value = 'linear';
+    document.getElementById( 'veeEstimationNotes' ).value = '';
+    currentVeeRows = [];
+  }
+
+  function confirmVeeEstimation() {
+    const method = document.getElementById( 'veeEstimationMethod' ).value;
+    const notes = document.getElementById( 'veeEstimationNotes' ).value;
+
+    Promise.all(
+      currentVeeRows.map( row =>
+        fetch( '/monitoring/api/estimate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify( {
+            meter_id: row.meter_id,
+            missing_date: row.reading_time,
+            method: method,
+            notes: notes
+          } )
+        } )
+      )
+    )
+      .then( () => {
+        closeVeeModal();
+      } )
+      .catch( err => {
+        alert( 'Hata: ' + err.message );
+      } );
+  }
+  window.addEventListener( "resize", () => {
+    statusChart.resize();
+    activityChart.resize();
+  } );
+</script>
+{% endblock %}

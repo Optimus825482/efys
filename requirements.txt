@@ -1,0 +1,33 @@
+# EFYS - Enerji Faturalandırma ve Yönetim Sistemi
+# Python 3.10+
+
+# Web Framework
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+
+# Database
+psycopg2-binary==2.9.10
+SQLAlchemy==2.0.25
+
+# WSGI Server (Production)
+gunicorn==21.2.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Excel/PDF Export
+openpyxl==3.1.2
+reportlab==4.0.8
+WeasyPrint==60.1
+
+# Date/Time
+python-dateutil==2.8.2
+
+# Validation
+email-validator==2.1.0
+
+# Security (Production)
+cryptography==41.0.7

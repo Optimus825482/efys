@@ -1,0 +1,125 @@
+{% extends 'base.html' %} {% block title %}Abone Detayı{% endblock %} {% block
+page_title %}{{ subscriber.name if subscriber else 'Abone Detayı' }}{% endblock
+%} {% set breadcrumb = [{'name': 'Aboneler', 'url':
+url_for('subscribers.index')}, {'name': 'Detay'}] %} {% block content %}
+<div class="grid grid-cols-3 gap-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Abone Bilgileri</h3>
+      <a href="#" class="btn btn-secondary btn-sm">Düzenle</a>
+    </div>
+    <div class="card-body">
+      <div style="margin-bottom: 16px">
+        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">
+          Abone No
+        </div>
+        <div style="font-weight: 600">
+          {{ subscriber.subscriber_code if subscriber else 'GONEN-001' }}
+        </div>
+      </div>
+      <div style="margin-bottom: 16px">
+        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">
+          Unvan
+        </div>
+        <div style="font-weight: 600">
+          {{ subscriber.name if subscriber else 'Gönen Yem Fabrikası A.Ş.' }}
+        </div>
+      </div>
+      <div style="margin-bottom: 16px">
+        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">
+          Sektör
+        </div>
+        <div>{{ subscriber.sector if subscriber else 'Gıda' }}</div>
+      </div>
+      <div style="margin-bottom: 16px">
+        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">
+          Tarife
+        </div>
+        <div>{{ subscriber.tariff_name if subscriber else 'Sanayi 2026' }}</div>
+      </div>
+      <div style="margin-bottom: 16px">
+        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">
+          Sayaç No
+        </div>
+        <div>{{ subscriber.meter_no if subscriber else 'ELK-001' }}</div>
+      </div>
+      <div>
+        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">
+          Durum
+        </div>
+        <div>
+          <span class="badge badge-success">{{ subscriber.status if subscriber else 'Aktif' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="grid-column: span 2">
+    <div class="card-header">
+      <h3 class="card-title">Tüketim Trendi</h3>
+    </div>
+    <div class="card-body">
+      <div id="consumptionChart" style="height: 280px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-4 gap-4 mt-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">
+      {{ (subscriber.avg_daily_consumption_kwh or 8500)|int }} kWh
+    </div>
+    <div class="kpi-card-label">Ort. Günlük</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-primary)">
+      255,000 kWh
+    </div>
+    <div class="kpi-card-label">Aylık Toplam</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">0.92</div>
+    <div class="kpi-card-label">Cos φ</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value">₺785,400</div>
+    <div class="kpi-card-label">Son Fatura</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Son Okumalar</h3>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="readingsGrid" class="ag-theme-alpine ag-theme-efys" style="height: 300px"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  var days = []; for ( var i = 29; i >= 0; i-- )days.push( new Date( Date.now() - i * 86400000 ).toLocaleDateString( 'tr-TR', { day: '2-digit', month: '2-digit' } ) );
+  var consumptionChart = echarts.init( document.getElementById( 'consumptionChart' ) );
+  consumptionChart.setOption( { tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: days }, yAxis: { type: 'value', axisLabel: { formatter: v => ( v / 1000 ).toFixed( 0 ) + 'K' } }, series: [{ type: 'bar', data: days.map( () => Math.floor( Math.random() * 3000 ) + 7000 ), itemStyle: { color: new echarts.graphic.LinearGradient( 0, 0, 0, 1, [{ offset: 0, color: '#2563EB' }, { offset: 1, color: '#3B82F6' }] ), borderRadius: [4, 4, 0, 0] } }], grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true } } );
+
+  var readings = {{ readings | tojson | safe if readings else '[]' }};
+  if ( !readings.length ) { readings = []; for ( var i = 0; i < 10; i++ ) { readings.push( { reading_time: new Date( Date.now() - i * 3600000 ).toISOString(), t1_consumption: Math.floor( Math.random() * 500 ) + 2000, t2_consumption: Math.floor( Math.random() * 400 ) + 1500, t3_consumption: Math.floor( Math.random() * 300 ) + 1000, power_factor: ( Math.random() * 0.1 + 0.88 ).toFixed( 2 ) } ); } }
+
+  function formatDate( value ) {
+    if ( !value ) return "-";
+    var d = new Date( value );
+    if ( isNaN( d.getTime() ) ) return "-";
+    return d.toLocaleString( 'tr-TR' );
+  }
+
+  var readingsGridData = readings.map( r => ( {
+    time: r.reading_time,
+    t1: r.t1_consumption,
+    t2: r.t2_consumption,
+    t3: r.t3_consumption,
+    pf: r.power_factor
+  } ) );
+
+  agGrid.createGrid( document.getElementById( 'readingsGrid' ), { columnDefs: [{ headerName: 'Tarih', field: 'time', flex: 1, valueFormatter: p => formatDate( p.value ) }, { headerName: 'T1', field: 't1', width: 100, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) }, { headerName: 'T2', field: 't2', width: 100, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) }, { headerName: 'T3', field: 't3', width: 100, valueFormatter: p => p.value?.toLocaleString( 'tr-TR' ) }, { headerName: 'Cos φ', field: 'pf', width: 80 }], rowData: readingsGridData, localeText: AG_GRID_LOCALE_TR } );
+  window.addEventListener( 'resize', () => consumptionChart.resize() );
+</script>
+{% endblock %}

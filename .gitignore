@@ -1,0 +1,107 @@
+# EFYS .gitignore - Production Security
+
+# Environment Variables
+.env
+.env.local
+.env.production
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Flask
+instance/
+.webassets-cache
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+*.log.*
+/var/log/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+
+# Database dumps
+*.sql
+*.sql.gz
+backup/
+backups/
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.crt
+ssl/
+
+# OS
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Documentation
+docs/_build/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Node (if using frontend build tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Sensitive configs
+gunicorn.pid
+celerybeat-schedule
+
+# Local development
+.vscode/settings.json
+.idea/workspace.xml
+
+# OS-specific
+*.swp
+*~
+
+# Backup files created during deployment
+*.tar.gz.bak

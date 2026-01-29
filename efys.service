@@ -1,0 +1,44 @@
+[Unit]
+Description=EFYS - Enerji Faturalandırma Sistemi
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/efys
+Environment="PATH=/var/www/efys/venv/bin"
+Environment="FLASK_ENV=production"
+EnvironmentFile=/var/www/efys/.env
+
+# Gunicorn command
+ExecStart=/var/www/efys/venv/bin/gunicorn \
+    --config /var/www/efys/gunicorn.conf.py \
+    --bind 127.0.0.1:8000 \
+    --workers 4 \
+    --worker-class sync \
+    --access-logfile /var/log/efys/access.log \
+    --error-logfile /var/log/efys/error.log \
+    --log-level info \
+    app:app
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=400
+StartLimitBurst=3
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/efys /var/www/efys/uploads /var/run/efys
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

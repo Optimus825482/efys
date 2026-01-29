@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EFYS - Giriş</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1387ec",
+                        "primary-dark": "#0d6ecc",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+        }
+
+        .card-glow {
+            box-shadow: 0 0 60px rgba(19, 135, 236, 0.15);
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 30px rgba(19, 135, 236, 0.4);
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-display gradient-bg min-h-screen flex items-center justify-center p-4">
+    <!-- Background decoration -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl pulse-ring"></div>
+        <div class="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pulse-ring"
+            style="animation-delay: 1s;"></div>
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl">
+        </div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-lg">
+        <!-- Logo & Title -->
+        <div class="text-center mb-10 floating">
+            <div
+                class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-blue-600 rounded-2xl shadow-2xl mb-6">
+                <span class="material-symbols-outlined text-white text-4xl">bolt</span>
+            </div>
+            <h1 class="text-4xl font-extrabold text-white mb-2">EFYS</h1>
+            <p class="text-blue-200/80 text-lg">Enerji Faturalandırma ve Yönetim Sistemi</p>
+            <p class="text-blue-300/60 text-sm mt-1">Gönen Organize Sanayi Bölgesi</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 card-glow border border-white/10">
+            <h2 class="text-xl font-bold text-white text-center mb-2">Sisteme Giriş</h2>
+            <p class="text-blue-200/60 text-center text-sm mb-8">Devam etmek için giriş tipinizi seçin</p>
+
+            <div class="space-y-4">
+                <!-- OSB Girişi -->
+                <a href="/dashboard" class="group block w-full">
+                    <div
+                        class="flex items-center gap-4 p-5 bg-gradient-to-r from-primary/20 to-primary/10 hover:from-primary hover:to-blue-600 rounded-2xl border border-primary/30 hover:border-primary transition-all duration-300 btn-glow cursor-pointer">
+                        <div
+                            class="flex-shrink-0 w-14 h-14 bg-primary/30 group-hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
+                            <span class="material-symbols-outlined text-white text-3xl">domain</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-white">OSB Yönetim Paneli</h3>
+                            <p class="text-blue-200/70 text-sm group-hover:text-white/70">Faturalandırma, raporlama ve
+                                sistem yönetimi</p>
+                        </div>
+                        <span
+                            class="material-symbols-outlined text-white/50 group-hover:text-white text-2xl transition-colors">arrow_forward</span>
+                    </div>
+                </a>
+
+                <!-- Sanayici Girişi -->
+                <a href="/portal" class="group block w-full">
+                    <div
+                        class="flex items-center gap-4 p-5 bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 hover:from-emerald-500 hover:to-green-600 rounded-2xl border border-emerald-500/30 hover:border-emerald-500 transition-all duration-300 btn-glow cursor-pointer">
+                        <div
+                            class="flex-shrink-0 w-14 h-14 bg-emerald-500/30 group-hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
+                            <span class="material-symbols-outlined text-white text-3xl">factory</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-white">Sanayici Portalı</h3>
+                            <p class="text-emerald-200/70 text-sm group-hover:text-white/70">Tüketim takibi, faturalar
+                                ve enerji kalitesi</p>
+                        </div>
+                        <span
+                            class="material-symbols-outlined text-white/50 group-hover:text-white text-2xl transition-colors">arrow_forward</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Demo Badge -->
+            <div class="mt-8 pt-6 border-t border-white/10">
+                <div class="flex items-center justify-center gap-2 text-amber-400/80">
+                    <span class="material-symbols-outlined text-lg">science</span>
+                    <span class="text-sm font-medium">Demo Modu - Kimlik doğrulama devre dışı</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-blue-200/40 text-sm">
+            <p>© 2026 EFYS - Tüm hakları saklıdır</p>
+        </div>
+    </div>
+</body>
+
+</html>

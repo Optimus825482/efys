@@ -1,0 +1,50 @@
+{% extends 'base.html' %} {% block title %}Fatura Raporu{% endblock %} {% block
+page_title %}Fatura Raporu{% endblock %} {% set breadcrumb = [{'name':
+'Raporlar', 'url': url_for('reports.index')}, {'name': 'Fatura'}] %} {% block
+content %}
+<div class="grid grid-cols-3 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">847</div>
+    <div class="kpi-card-label">Toplam Fatura</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value">₺12.4M</div>
+    <div class="kpi-card-label">Toplam Tutar</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)">36</div>
+    <div class="kpi-card-label">Aktif Dönem</div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Dönem Bazlı Faturalar</h3>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Dönem</th>
+          <th>Fatura Adedi</th>
+          <th>Toplam Tutar</th>
+          <th>Ortalama Fatura</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600">2026 Ocak</td>
+          <td>847</td>
+          <td>₺12,456,780</td>
+          <td>₺14,706</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">2025 Aralık</td>
+          <td>845</td>
+          <td>₺11,890,450</td>
+          <td>₺14,072</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

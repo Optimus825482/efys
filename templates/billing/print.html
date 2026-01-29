@@ -1,0 +1,335 @@
+{% extends 'base.html' %} {% block title %}Fatura Yazdır{% endblock %} {% block
+page_title %}Fatura Yazdır / PDF{% endblock %} {% set breadcrumb = [{'name':
+'Faturalama', 'url': url_for('billing.index')}, {'name': 'Yazdır/PDF'}] %} {%
+block content %}
+
+{% if invoice %}
+<!-- Yazdırılabilir Fatura -->
+<div class="card print-container" id="printable-invoice" style="max-width: 210mm; margin: 0 auto;">
+  <div class="card-body" style="padding: 15mm;">
+    <!-- Fatura Başlığı -->
+    <div
+      style="display: flex; justify-content: space-between; border-bottom: 2px solid #1a56db; padding-bottom: 16px; margin-bottom: 20px;">
+      <div>
+        <h1 style="font-size: 18px; font-weight: 700; color: #1a56db; margin: 0;">GÖNEN ORGANİZE SANAYİ BÖLGESİ</h1>
+        <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">OSB Dağıtım Lisansı: EDL-2006-0XXX<br>Elektrik
+          Faturalandırma ve Yönetim Sistemi</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 4px;">ELEKTRİK FATURASI</div>
+        <div style="font-size: 12px; font-weight: 600; color: #1a56db;">{{ invoice.invoice_no }}</div>
+        <div style="font-size: 10px; color: #6b7280;">Düzenleme: {{ invoice.issue_date.strftime('%d.%m.%Y') if
+          invoice.issue_date else 'N/A' }}</div>
+      </div>
+    </div>
+
+    <!-- Abone ve Sayaç Bilgileri -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; font-size: 11px;">
+      <div style="background: #f9fafb; padding: 12px; border-radius: 4px;">
+        <div style="font-size: 10px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase;">
+          Abone Bilgileri</div>
+        <table style="width: 100%;">
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Abone No:</td>
+            <td style="font-weight: 600; text-align: right;">{{ invoice.subscriber_code }}</td>
+          </tr>
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Unvan:</td>
+            <td style="font-weight: 600; text-align: right;">{{ invoice.subscriber_name }}</td>
+          </tr>
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Vergi No:</td>
+            <td style="text-align: right;">{{ invoice.tax_no or '-' }}</td>
+          </tr>
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Adres:</td>
+            <td style="text-align: right; font-size: 10px;">{{ invoice.address or '-' }}</td>
+          </tr>
+        </table>
+      </div>
+      <div style="background: #f9fafb; padding: 12px; border-radius: 4px;">
+        <div style="font-size: 10px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase;">
+          Sayaç ve Dönem</div>
+        <table style="width: 100%;">
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Sayaç No:</td>
+            <td style="font-weight: 600; text-align: right;">{{ invoice.meter_no or 'N/A' }}</td>
+          </tr>
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Çarpan:</td>
+            <td style="text-align: right;">{{ invoice.multiplier or 1 }}</td>
+          </tr>
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Dönem:</td>
+            <td style="font-weight: 600; text-align: right;">{{ invoice.period_name }}</td>
+          </tr>
+          <tr>
+            <td style="color: #6b7280; padding: 2px 0;">Tarih Aralığı:</td>
+            <td style="text-align: right;">{{ invoice.period_start.strftime('%d.%m') }} - {{
+              invoice.period_end.strftime('%d.%m.%Y') }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tüketim Özeti -->
+    <div style="background: #eff6ff; padding: 10px 16px; border-radius: 4px; margin-bottom: 20px;">
+      <div
+        style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; text-align: center; font-size: 11px;">
+        <div>
+          <div style="color: #6b7280; font-size: 10px;">T1 (Gündüz)</div>
+          <div style="font-weight: 700; color: #1a56db;">{{ "{:,.0f}".format(invoice.t1_consumption or 0) }} kWh</div>
+        </div>
+        <div>
+          <div style="color: #6b7280; font-size: 10px;">T2 (Puant)</div>
+          <div style="font-weight: 700; color: #f59e0b;">{{ "{:,.0f}".format(invoice.t2_consumption or 0) }} kWh</div>
+        </div>
+        <div>
+          <div style="color: #6b7280; font-size: 10px;">T3 (Gece)</div>
+          <div style="font-weight: 700; color: #10b981;">{{ "{:,.0f}".format(invoice.t3_consumption or 0) }} kWh</div>
+        </div>
+        <div style="border-left: 1px solid #d1d5db; padding-left: 12px;">
+          <div style="color: #6b7280; font-size: 10px;">Toplam</div>
+          <div style="font-weight: 700; font-size: 14px;">{{ "{:,.0f}".format(invoice.total_consumption or 0) }} kWh
+          </div>
+        </div>
+        <div>
+          <div style="color: #6b7280; font-size: 10px;">Max Demant</div>
+          <div style="font-weight: 700;">{{ "{:,.1f}".format(invoice.max_demand or 0) }} kW</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fatura Kalemleri Tablosu -->
+    <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 16px;">
+      <thead>
+        <tr style="background: #f3f4f6;">
+          <th style="text-align: left; padding: 8px; border: 1px solid #e5e7eb;">Açıklama</th>
+          <th style="text-align: right; padding: 8px; border: 1px solid #e5e7eb;">Miktar</th>
+          <th style="text-align: right; padding: 8px; border: 1px solid #e5e7eb;">Birim</th>
+          <th style="text-align: right; padding: 8px; border: 1px solid #e5e7eb;">Birim Fiyat</th>
+          <th style="text-align: right; padding: 8px; border: 1px solid #e5e7eb;">Tutar (TL)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in invoice.items %}
+        <tr>
+          <td style="padding: 6px 8px; border: 1px solid #e5e7eb;">{{ item.description }}</td>
+          <td style="text-align: right; padding: 6px 8px; border: 1px solid #e5e7eb;">{{ "{:,.2f}".format(item.quantity
+            or 0) }}</td>
+          <td style="text-align: right; padding: 6px 8px; border: 1px solid #e5e7eb;">{{ item.unit or 'kWh' }}</td>
+          <td style="text-align: right; padding: 6px 8px; border: 1px solid #e5e7eb;">₺{{
+            "{:,.4f}".format(item.unit_price or 0) }}</td>
+          <td style="text-align: right; padding: 6px 8px; border: 1px solid #e5e7eb; font-weight: 600;">₺{{
+            "{:,.2f}".format(item.total_amount or 0) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Toplam -->
+    <div style="display: flex; justify-content: flex-end;">
+      <div style="width: 250px; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; font-size: 11px;">
+        <div
+          style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+          <span>Ara Toplam</span>
+          <span style="font-weight: 600;">₺{{ "{:,.2f}".format(invoice.subtotal or 0) }}</span>
+        </div>
+        {% if invoice.btv_amount %}
+        <div
+          style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
+          <span>BTV (%5)</span>
+          <span style="font-weight: 600;">₺{{ "{:,.2f}".format(invoice.btv_amount or 0) }}</span>
+        </div>
+        {% endif %}
+        <div
+          style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
+          <span>KDV (%{{ invoice.vat_rate|int }})</span>
+          <span style="font-weight: 600;">₺{{ "{:,.2f}".format(invoice.vat_amount or 0) }}</span>
+        </div>
+        <div
+          style="display: flex; justify-content: space-between; padding: 12px; background: #1a56db; color: white; font-size: 14px;">
+          <span style="font-weight: 700;">GENEL TOPLAM</span>
+          <span style="font-weight: 700;">₺{{ "{:,.2f}".format(invoice.total_amount or 0) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ödeme Bilgileri -->
+    <div
+      style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 4px; border-left: 3px solid #1a56db; font-size: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">Ödeme Bilgileri</div>
+          <div style="color: #6b7280;">
+            Banka: Ziraat Bankası - Gönen Şubesi<br>
+            IBAN: TR00 0000 0000 0000 0000 0000 00<br>
+            Açıklama: {{ invoice.subscriber_code }} - {{ invoice.period_name }}
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-weight: 600; margin-bottom: 4px;">Son Ödeme Tarihi</div>
+          <div style="font-size: 16px; font-weight: 700; color: #1a56db;">{{ invoice.due_date.strftime('%d.%m.%Y') if
+            invoice.due_date else 'N/A' }}</div>
+          <div style="font-size: 9px; color: #6b7280; margin-top: 2px;">Gecikme faizi uygulanır</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Yasal Bilgiler -->
+    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 8px; color: #9ca3af;">
+      <p style="margin-bottom: 4px;"><strong>EPDK Mevzuatı:</strong> Bu fatura, "Organize Sanayi Bölgelerinin Elektrik
+        Piyasası Faaliyetlerine İlişkin Yönetmelik" hükümlerine uygun olarak düzenlenmiştir.</p>
+      <p><strong>İtiraz:</strong> Faturaya ilişkin itirazlar 15 gün içinde yazılı olarak OSB Müdürlüğü'ne yapılmalıdır.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Yazdırma Butonları -->
+<div class="card" style="max-width: 210mm; margin: 20px auto;">
+  <div class="card-body" style="display: flex; justify-content: space-between; gap: 12px;">
+    <button class="btn btn-secondary" onclick="window.history.back()">← Geri</button>
+    <div style="display: flex; gap: 12px;">
+      <button class="btn btn-outline-primary" onclick="window.print()">🖨️ Yazdır</button>
+      <button class="btn btn-primary" onclick="downloadPDF()">📄 PDF İndir</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+
+    #printable-invoice,
+    #printable-invoice * {
+      visibility: visible;
+    }
+
+    #printable-invoice {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+
+    .card:not(#printable-invoice),
+    .sidebar,
+    .header,
+    .breadcrumb {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  function downloadPDF() {
+    alert( 'PDF indirme özelliği yakında eklenecek.\n\nŞimdilik "Yazdır" butonunu kullanarak PDF olarak kaydedebilirsiniz.' );
+  }
+</script>
+
+{% else %}
+<!-- Fatura Seçim Ekranı -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Fatura Yazdırma</h3>
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="form-label">Dönem Seç</label>
+        <select class="form-select" id="period-select">
+          <option value="">-- Dönem Seçin --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Abone Grubu</label>
+        <select class="form-select" id="group-select">
+          <option value="">Tümü</option>
+          <option value="Sanayi">Sanayi</option>
+          <option value="Ticarethane">Ticarethane</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Format</label>
+        <select class="form-select" id="format-select">
+          <option value="pdf">PDF</option>
+          <option value="excel">Excel</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sıralama</label>
+        <select class="form-select" id="sort-select">
+          <option value="name">Abone Adı (A-Z)</option>
+          <option value="invoice_no">Fatura No</option>
+          <option value="amount">Tutar (Büyükten Küçüğe)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Fatura Listesi -->
+    <div id="invoice-list" style="margin-top: 20px;">
+      <div style="text-align: center; padding: 40px; color: var(--color-text-muted);">
+        Dönem seçerek faturaları listeleyin
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 16px">
+      <button class="btn btn-primary" onclick="generateBulkPDF()">📄 Toplu PDF Oluştur</button>
+      <button class="btn btn-secondary" onclick="exportExcel()">📊 Excel İndir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Dönemleri yükle
+  fetch( '/billing/api/periods' )
+    .then( r => r.json() )
+    .then( data => {
+      if ( data.success ) {
+        const select = document.getElementById( 'period-select' );
+        data.data.forEach( p => {
+          select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+        } );
+      }
+    } );
+
+  document.getElementById( 'period-select' ).addEventListener( 'change', function () {
+    const periodId = this.value;
+    if ( !periodId ) return;
+
+    fetch( `/billing/api/invoices/period/${periodId}` )
+      .then( r => r.json() )
+      .then( data => {
+        const container = document.getElementById( 'invoice-list' );
+        if ( data.success && data.data.length > 0 ) {
+          let html = '<div class="table-responsive"><table class="table"><thead><tr><th>Fatura No</th><th>Abone</th><th>Tutar</th><th>Durum</th><th></th></tr></thead><tbody>';
+          data.data.forEach( inv => {
+            html += `<tr>
+            <td>${inv.invoice_no}</td>
+            <td>${inv.subscriber_code} - ${inv.subscriber_name}</td>
+            <td style="font-weight:600;">₺${inv.total_amount.toLocaleString( 'tr-TR', { minimumFractionDigits: 2 } )}</td>
+            <td><span class="badge badge-${inv.status === 'paid' ? 'success' : 'warning'}">${inv.status}</span></td>
+            <td><a href="/billing/print/${inv.id}" class="btn btn-sm btn-outline-primary">Yazdır</a></td>
+          </tr>`;
+          } );
+          html += '</tbody></table></div>';
+          container.innerHTML = html;
+        } else {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--color-text-muted);">Bu dönemde fatura bulunamadı</div>';
+        }
+      } );
+  } );
+
+  function generateBulkPDF() {
+    alert( 'Toplu PDF oluşturma özelliği yakında eklenecek.' );
+  }
+
+  function exportExcel() {
+    alert( 'Excel indirme özelliği yakında eklenecek.' );
+  }
+</script>
+{% endif %}
+{% endblock %}

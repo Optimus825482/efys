@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Email/SMS Ayarları{% endblock %}
+{% block page_title %}Email/SMS Bildirimleri{% endblock %}
+{% set breadcrumb = [{'name': 'Ayarlar', 'url': url_for('settings.index')}, {'name': 'Email/SMS'}] %}
+
+{% block content %}
+<div class="grid grid-cols-2 gap-4">
+    <!-- Email Ayarları -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📧 Email Sunucu Ayarları</h3>
+        </div>
+        <div class="card-body">
+            <form id="email-form">
+                <div class="form-group">
+                    <label class="form-label">SMTP Sunucu</label>
+                    <input type="text" class="form-input" id="smtp-host"
+                        value="{{ settings.smtp_host or 'smtp.gmail.com' }}" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Port</label>
+                        <input type="number" class="form-input" id="smtp-port"
+                            value="{{ settings.smtp_port or 587 }}" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Güvenlik</label>
+                        <select class="form-select" id="smtp-security">
+                            <option value="tls" {{ 'selected' if settings.smtp_security=='tls' else '' }}>TLS</option>
+                            <option value="ssl" {{ 'selected' if settings.smtp_security=='ssl' else '' }}>SSL</option>
+                            <option value="none" {{ 'selected' if settings.smtp_security=='none' else '' }}>Yok</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kullanıcı Adı</label>
+                    <input type="email" class="form-input" id="smtp-user" value="{{ settings.smtp_user or '' }}"
+                        placeholder="email@example.com" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Şifre</label>
+                    <input type="password" class="form-input" id="smtp-pass" placeholder="••••••••" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gönderen Adı</label>
+                    <input type="text" class="form-input" id="sender-name"
+                        value="{{ settings.sender_name or 'Gönen OSB EFYS' }}" />
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" onclick="testEmail()">Test Gönder</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SMS Ayarları -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📱 SMS Gateway Ayarları</h3>
+        </div>
+        <div class="card-body">
+            <form id="sms-form">
+                <div class="form-group">
+                    <label class="form-label">SMS Sağlayıcı</label>
+                    <select class="form-select" id="sms-provider">
+                        <option value="netgsm" {{ 'selected' if settings.sms_provider=='netgsm' else '' }}>Netgsm
+                        </option>
+                        <option value="iletimerkezi" {{ 'selected' if settings.sms_provider=='iletimerkezi' else '' }}>
+                            İleti Merkezi</option>
+                        <option value="mutlucell" {{ 'selected' if settings.sms_provider=='mutlucell' else '' }}>
+                            Mutlucell</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Kullanıcı</label>
+                    <input type="text" class="form-input" id="sms-user" value="{{ settings.sms_user or '' }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Şifre/Token</label>
+                    <input type="password" class="form-input" id="sms-pass" placeholder="••••••••" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gönderen Başlık</label>
+                    <input type="text" class="form-input" id="sms-header"
+                        value="{{ settings.sms_header or 'GONENOSB' }}" maxlength="11" />
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" onclick="testSms()">Test Gönder</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bildirim Şablonları -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title">📋 Bildirim Şablonları</h3>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Şablon</th>
+                    <th>Açıklama</th>
+                    <th>Email</th>
+                    <th>SMS</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>fatura_bildirim</strong></td>
+                    <td>Yeni fatura kesildiğinde gönderilir</td>
+                    <td><span class="badge badge-success">Aktif</span></td>
+                    <td><span class="badge badge-success">Aktif</span></td>
+                    <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+                </tr>
+                <tr>
+                    <td><strong>vade_hatirlatma</strong></td>
+                    <td>Vade tarihinden 3 gün önce</td>
+                    <td><span class="badge badge-success">Aktif</span></td>
+                    <td><span class="badge badge-warning">Pasif</span></td>
+                    <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+                </tr>
+                <tr>
+                    <td><strong>odeme_onay</strong></td>
+                    <td>Ödeme alındığında gönderilir</td>
+                    <td><span class="badge badge-success">Aktif</span></td>
+                    <td><span class="badge badge-warning">Pasif</span></td>
+                    <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+                </tr>
+                <tr>
+                    <td><strong>reaktif_uyari</strong></td>
+                    <td>Reaktif ceza riski tespit edildiğinde</td>
+                    <td><span class="badge badge-success">Aktif</span></td>
+                    <td><span class="badge badge-success">Aktif</span></td>
+                    <td><button class="btn btn-secondary btn-sm">Düzenle</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById( 'email-form' ).addEventListener( 'submit', async function ( e ) {
+        e.preventDefault();
+        alert( 'Email ayarları kaydedildi (Demo)' );
+    } );
+
+    document.getElementById( 'sms-form' ).addEventListener( 'submit', async function ( e ) {
+        e.preventDefault();
+        alert( 'SMS ayarları kaydedildi (Demo)' );
+    } );
+
+    function testEmail() {
+        const email = prompt( 'Test emaili gönderilecek adres:', 'test@example.com' );
+        if ( email ) {
+            alert( `Test emaili ${email} adresine gönderildi (Demo)` );
+        }
+    }
+
+    function testSms() {
+        const phone = prompt( 'Test SMS gönderilecek numara:', '05XX XXX XX XX' );
+        if ( phone ) {
+            alert( `Test SMS ${phone} numarasına gönderildi (Demo)` );
+        }
+    }
+</script>
+{% endblock %}

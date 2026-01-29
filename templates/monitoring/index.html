@@ -1,0 +1,200 @@
+{% extends 'base.html' %} {% block title %}Veri İzleme{% endblock %} {% block
+page_title %}Veri İzleme{% endblock %} {% block content %}
+<div class="grid grid-cols-3 gap-4">
+  <a
+    href="{{ url_for('monitoring.last_indexes') }}"
+    class="card"
+    style="cursor: pointer"
+  >
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-primary-100);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-primary);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M3 3v18h18" />
+          <path d="M18 17l-6-6-4 4-5-5" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Son Endeksler
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        T1, T2, T3 son değerler
+      </div>
+    </div>
+  </a>
+  <a
+    href="{{ url_for('monitoring.load_profile') }}"
+    class="card"
+    style="cursor: pointer"
+  >
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-success-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-success);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Yük Profili
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        15 dk detaylı tüketim
+      </div>
+    </div>
+  </a>
+  <a
+    href="{{ url_for('monitoring.vee') }}"
+    class="card"
+    style="cursor: pointer"
+  >
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-warning-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-warning);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        VEE Doğrulama
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Veri kalite kontrol
+      </div>
+    </div>
+  </a>
+  <a
+    href="{{ url_for('monitoring.missing_data') }}"
+    class="card"
+    style="cursor: pointer"
+  >
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-danger-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-danger);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Eksik Veri
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Tamamlanmamış okumalar
+      </div>
+    </div>
+  </a>
+  <a
+    href="{{ url_for('monitoring.loss_analysis') }}"
+    class="card"
+    style="cursor: pointer"
+  >
+    <div class="card-body" style="text-align: center; padding: 24px">
+      <div
+        style="
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 16px;
+          background: var(--color-info-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-info);
+        "
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Kayıp/Kaçak
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Fark analizi
+      </div>
+    </div>
+  </a>
+</div>
+{% endblock %}

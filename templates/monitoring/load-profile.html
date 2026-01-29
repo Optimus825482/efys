@@ -1,0 +1,82 @@
+{% extends 'base.html' %} {% block title %}Yük Profili{% endblock %} {% block
+page_title %}Yük Profili (Load Profile){% endblock %} {% set breadcrumb =
+[{'name': 'Veri İzleme', 'url': url_for('monitoring.index')}, {'name': 'Yük
+Profili'}] %} {% block content %}
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">Sayaç Seç</h3>
+  </div>
+  <div class="card-body">
+    <div class="grid grid-cols-4 gap-4">
+      <div class="form-group">
+        <label class="form-label">Sayaç</label>
+        <select class="form-select">
+          <option>M-2847 - ABC Tekstil</option>
+          <option>M-3456 - XYZ Otomotiv</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Başlangıç</label>
+        <input type="date" class="form-input" value="2026-01-28" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bitiş</label>
+        <input type="date" class="form-input" value="2026-01-29" />
+      </div>
+      <div class="form-group" style="display: flex; align-items: flex-end">
+        <button class="btn btn-primary w-full">Görüntüle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">15 Dakikalık Yük Profili</h3>
+    <span style="color: var(--color-text-secondary)"
+      >M-2847 - ABC Tekstil | 28.01.2026</span
+    >
+  </div>
+  <div class="card-body">
+    <div class="chart-container-lg">
+      <canvas id="loadProfileChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  const ctx = document.getElementById("loadProfileChart").getContext("2d");
+  const labels = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      labels.push(
+        `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`,
+      );
+    }
+  }
+  const data = labels.map(() => Math.floor(Math.random() * 100) + 150);
+
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Güç (kW)",
+          data: data,
+          borderColor: "#2563EB",
+          backgroundColor: "rgba(37,99,235,0.1)",
+          fill: true,
+          tension: 0.3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: false } },
+    },
+  });
+</script>
+{% endblock %}

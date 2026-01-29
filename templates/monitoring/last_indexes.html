@@ -1,0 +1,121 @@
+{% extends 'base.html' %} {% block title %}Son Endeksler{% endblock %} {% block
+page_title %}Son Endeksler{% endblock %} {% set breadcrumb = [{'name': 'Veri
+İzleme'}, {'name': 'Son Endeksler'}] %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">{{ stats.total if stats else 0 }}</div>
+    <div class="kpi-card-label">Toplam Sayaç</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">{{ stats.online if stats else 0 }}</div>
+    <div class="kpi-card-label">Çevrimiçi</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">{{ stats.offline if stats else 0 }}</div>
+    <div class="kpi-card-label">Çevrimdışı</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-primary)">{{ stats.access_rate if stats else 0 }}%</div>
+    <div class="kpi-card-label">Erişim Oranı</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Endeks Tablosu</h3>
+    <div style="display: flex; gap: 8px">
+      <input type="text" id="searchBox" class="grid-search" placeholder="Ara..." onkeyup="filter()" />
+      <button class="grid-export-btn" onclick="exp()">Excel</button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="indexGrid" class="ag-theme-alpine ag-theme-efys" style="height: 500px"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data
+  var indexData = {{ indexes | tojson | safe if indexes else '[]' }};
+  var stats = {{ stats | tojson | safe if stats else '{}' }};
+
+  var grid = agGrid.createGrid( document.getElementById( "indexGrid" ), {
+    columnDefs: [
+      {
+        headerName: "Sayaç",
+        field: "meter_no",
+        width: 100,
+        cellStyle: { fontWeight: "600" },
+      },
+      { headerName: "Abone", field: "subscriber_name", flex: 1 },
+      {
+        headerName: "T1",
+        field: "t1_index",
+        width: 110,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "T2",
+        field: "t2_index",
+        width: 110,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "T3",
+        field: "t3_index",
+        width: 110,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "Reaktif",
+        field: "reactive",
+        width: 100,
+        valueFormatter: ( p ) => p.value?.toLocaleString( "tr-TR" ),
+      },
+      {
+        headerName: "Cos φ",
+        field: "cos_phi",
+        width: 80,
+        cellRenderer: ( p ) => {
+          var val = parseFloat( p.value || 0 );
+          var c = val >= 0.9
+            ? "var(--color-success)"
+            : "var(--color-danger)";
+          return '<span style="color:' + c + '">' + val.toFixed( 2 ) + "</span>";
+        },
+      },
+      {
+        headerName: "Durum",
+        field: "status",
+        width: 110,
+        cellRenderer: ( p ) =>
+          '<span class="badge ' +
+          ( p.value === "online" ? "badge-success" : "badge-danger" ) +
+          '">' +
+          ( p.value === "online" ? "Çevrimiçi" : "Çevrimdışı" ) +
+          "</span>",
+      },
+      {
+        headerName: "Son Okuma",
+        field: "reading_time_local",
+        width: 150,
+        valueFormatter: ( p ) => p.value || '-',
+      },
+    ],
+    rowData: indexData,
+    pagination: true,
+    paginationPageSize: 15,
+    localeText: AG_GRID_LOCALE_TR,
+    defaultColDef: { sortable: true, resizable: true, filter: true },
+  } );
+
+  function filter() {
+    grid.setGridOption(
+      "quickFilterText",
+      document.getElementById( "searchBox" ).value,
+    );
+  }
+  function exp() {
+    grid.exportDataAsExcel( { fileName: "endeksler.xlsx" } );
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,373 @@
+{% extends 'base.html' %} {% block title %}Alarm Merkezi{% endblock %} {% block
+page_title %}Alarm Merkezi{% endblock %} {% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-5 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-icon primary">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.total if stats else 0 }}</div>
+    <div class="kpi-card-label">Toplam Alarm</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon danger">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+        />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.critical if stats else 0 }}</div>
+    <div class="kpi-card-label">Kritik</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon warning">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.warning if stats else 0 }}</div>
+    <div class="kpi-card-label">Uyarı</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon info">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.info if stats else 0 }}</div>
+    <div class="kpi-card-label">Bilgi</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon secondary">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ stats.unacknowledged if stats else 0 }}</div>
+    <div class="kpi-card-label">Onay Bekleyen</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="grid grid-cols-4 gap-4">
+      <div>
+        <label class="form-label">Önem Derecesi</label>
+        <select id="severityFilter" class="form-select">
+          <option value="">Tümü</option>
+          <option value="critical">Kritik</option>
+          <option value="warning">Uyarı</option>
+          <option value="info">Bilgi</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Durum</label>
+        <select id="statusFilter" class="form-select">
+          <option value="">Tümü</option>
+          <option value="active">Aktif</option>
+          <option value="acknowledged">Onaylandı</option>
+          <option value="resolved">Çözüldü</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Tarih Aralığı</label>
+        <input type="date" id="dateFilter" class="form-input" />
+      </div>
+      <div style="display: flex; align-items: flex-end">
+        <button class="btn btn-primary" onclick="applyFilters()">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          Filtrele
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alarms Grid -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Alarm Listesi</h3>
+    <div style="display: flex; gap: 8px">
+      <button class="btn btn-secondary btn-sm" onclick="refreshAlarms()">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+        </svg>
+        Yenile
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="acknowledgeSelected()">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        Seçilenleri Onayla
+      </button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="alarmsGrid" style="height: 600px; width: 100%"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // AG-Grid Column Definitions
+  const columnDefs = [
+      {
+          headerName: '',
+          field: 'id',
+          checkboxSelection: true,
+          headerCheckboxSelection: true,
+          width: 50,
+          pinned: 'left'
+      },
+      {
+          headerName: 'Önem',
+          field: 'severity',
+          width: 100,
+          cellRenderer: params => {
+              const badges = {
+                  'critical': '<span class="badge badge-danger">Kritik</span>',
+                  'warning': '<span class="badge badge-warning">Uyarı</span>',
+                  'info': '<span class="badge badge-info">Bilgi</span>'
+              };
+              return badges[params.value] || params.value;
+          }
+      },
+      {
+          headerName: 'Mesaj',
+          field: 'message',
+          flex: 2,
+          cellStyle: { fontWeight: '500' }
+      },
+      {
+          headerName: 'Kaynak',
+          field: 'source',
+          width: 150
+      },
+      {
+          headerName: 'Zaman',
+          field: 'timestamp',
+          width: 180,
+          valueFormatter: params => {
+              if (!params.value) return '';
+              return new Date(params.value).toLocaleString('tr-TR');
+          }
+      },
+      {
+          headerName: 'Durum',
+          field: 'acknowledged',
+          width: 120,
+          cellRenderer: params => {
+              return params.value
+                  ? '<span class="badge badge-success">Onaylandı</span>'
+                  : '<span class="badge badge-secondary">Bekliyor</span>';
+          }
+      },
+      {
+          headerName: 'İşlemler',
+          width: 150,
+          cellRenderer: params => {
+              return `
+                  <div style="display: flex; gap: 4px;">
+                      <button class="btn btn-sm btn-primary" onclick="acknowledgeAlarm(${params.data.id})"
+                              ${params.data.acknowledged ? 'disabled' : ''}>
+                          Onayla
+                      </button>
+                      <button class="btn btn-sm btn-secondary" onclick="viewDetails(${params.data.id})">
+                          Detay
+                      </button>
+                  </div>
+              `;
+          }
+      }
+  ];
+
+  // Grid Options
+  const gridOptions = {
+      columnDefs: columnDefs,
+      rowData: {{ alarms | tojson | safe }},
+      defaultColDef: {
+          sortable: true,
+          filter: true,
+          resizable: true
+      },
+      rowSelection: 'multiple',
+      pagination: true,
+      paginationPageSize: 20,
+      animateRows: true,
+      onGridReady: params => {
+          params.api.sizeColumnsToFit();
+      }
+  };
+
+  // Initialize Grid
+  document.addEventListener('DOMContentLoaded', () => {
+      const gridDiv = document.querySelector('#alarmsGrid');
+      new agGrid.Grid(gridDiv, gridOptions);
+  });
+
+  // Functions
+  function applyFilters() {
+      const severity = document.getElementById('severityFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const date = document.getElementById('dateFilter').value;
+
+      gridOptions.api.setQuickFilter('');
+
+      // Apply filters
+      gridOptions.api.setFilterModel({
+          severity: severity ? { type: 'equals', filter: severity } : null,
+          acknowledged: status === 'acknowledged' ? { type: 'equals', filter: true } :
+                       status === 'active' ? { type: 'equals', filter: false } : null
+      });
+  }
+
+  function refreshAlarms() {
+      fetch('/api/alarms')
+          .then(res => res.json())
+          .then(data => {
+              if (data.success) {
+                  gridOptions.api.setRowData(data.data);
+                  showNotification('Alarmlar güncellendi', 'success');
+              }
+          })
+          .catch(err => {
+              showNotification('Yenileme hatası: ' + err.message, 'error');
+          });
+  }
+
+  function acknowledgeAlarm(alarmId) {
+      if (!confirm('Bu alarmı onaylamak istediğinizden emin misiniz?')) return;
+
+      fetch(`/api/alarms/acknowledge/${alarmId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+      })
+      .then(res => res.json())
+      .then(data => {
+          if (data.success) {
+              showNotification('Alarm onaylandı', 'success');
+              refreshAlarms();
+          } else {
+              showNotification('Hata: ' + data.error, 'error');
+          }
+      })
+      .catch(err => {
+          showNotification('İstek hatası: ' + err.message, 'error');
+      });
+  }
+
+  function acknowledgeSelected() {
+      const selectedRows = gridOptions.api.getSelectedRows();
+      if (selectedRows.length === 0) {
+          showNotification('Lütfen alarm seçin', 'warning');
+          return;
+      }
+
+      if (!confirm(`${selectedRows.length} alarmı onaylamak istediğinizden emin misiniz?`)) return;
+
+      Promise.all(
+          selectedRows.map(row =>
+              fetch(`/api/alarms/acknowledge/${row.id}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' }
+              })
+          )
+      )
+      .then(() => {
+          showNotification('Seçili alarmlar onaylandı', 'success');
+          refreshAlarms();
+      })
+      .catch(err => {
+          showNotification('Hata: ' + err.message, 'error');
+      });
+  }
+
+  function viewDetails(alarmId) {
+      // TODO: Implement alarm details modal
+      showNotification('Detay görüntüleme yakında eklenecek', 'info');
+  }
+
+  function showNotification(message, type) {
+      // Simple notification (can be enhanced with a library)
+      alert(message);
+  }
+
+  // Auto-refresh every 30 seconds
+  setInterval(refreshAlarms, 30000);
+</script>
+{% endblock %}

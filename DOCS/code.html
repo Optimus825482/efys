@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sanayici Portalı: Anasayfa</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1387ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom gauge chart simulation */
+        .gauge-bg {
+            background: conic-gradient(
+                from 180deg at 50% 100%,
+                #ef4444 0deg 36deg,     /* Red zone starts at 20% mark for inductive (180 * 0.2 = 36deg from left if inverted, but simplified here) */
+                #22c55e 36deg 144deg,   /* Green zone */
+                #ef4444 144deg 180deg   /* Red zone */
+            );
+            mask-image: radial-gradient(transparent 55%, black 56%);
+            -webkit-mask-image: radial-gradient(transparent 55%, black 56%);
+        }
+        
+        /* Inductive specific: Green 0-20% (0-36deg), Red 20%+ */
+        .gauge-inductive {
+            background: conic-gradient(
+                from 270deg at 50% 100%,
+                #22c55e 0deg 36deg, /* 0-20% Green */
+                #fbbf24 36deg 45deg, /* 20-25% Yellow Warning */
+                #ef4444 45deg 180deg /* >25% Red */
+            );
+             /* Mask remains same */
+        }
+
+        /* Simplified visual for the demo */
+        .gauge-mask {
+            mask-image: radial-gradient(farthest-side, transparent 60%, black 61%);
+            -webkit-mask-image: radial-gradient(farthest-side, transparent 60%, black 61%);
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-[#111518] dark:text-white antialiased overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar -->
+<aside class="hidden lg:flex w-72 flex-col bg-white dark:bg-[#1a2634] border-r border-[#f0f2f4] dark:border-[#2a3644] h-full flex-shrink-0">
+<div class="p-5 flex flex-col gap-8 h-full">
+<!-- User Profile Summary -->
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-12" data-alt="Industrial factory manager portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSR1H-bdFp5mxBiO2FkbisoYya7HplmBoEAKyxQVuffT46DVZUCTrFyHeORysSd7Tx-MJT-3otzP5bmGtDrDXeT-_5YdUz3sJJCTMcEDlF-1cTbuZ3BeoQTPDZ5buWYqzkwJopAt2_fTiYDdX175IxyXyMW8oLzhRuwFmKYKq6Q9X7i9QRdYOcaC3vVlEmok0_00znl2MqsNXk69tllIv2ANk6jmPwru0K8muatNR0h882-Cy_M86SeDoKQTL2QFgfE6d0B8kNIo65");'></div>
+<div class="flex flex-col">
+<h1 class="text-base font-bold leading-tight dark:text-white">Ahmet Yılmaz</h1>
+<p class="text-[#617789] dark:text-gray-400 text-xs font-medium uppercase tracking-wider">Metal İşleme A.Ş.</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2 flex-1">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 text-primary group" href="#">
+<span class="material-symbols-outlined text-primary group-hover:text-primary">dashboard</span>
+<span class="text-sm font-bold">Panel Genel Bakış</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300 transition-colors" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-sm font-medium">Faturalar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300 transition-colors" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-sm font-medium">Detaylı Raporlar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300 transition-colors" href="#">
+<span class="material-symbols-outlined">bolt</span>
+<span class="text-sm font-medium">Enerji Kalitesi</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] text-[#617789] dark:text-gray-300 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Tesis Ayarları</span>
+</a>
+</nav>
+<!-- Footer / Help -->
+<div class="mt-auto pt-6 border-t border-[#f0f2f4] dark:border-[#2a3644]">
+<div class="flex items-center gap-3 px-3 py-2 text-[#617789] dark:text-gray-400 cursor-pointer hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help</span>
+<span class="text-sm font-medium">Destek Merkezi</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-background-light dark:bg-background-dark relative">
+<!-- Mobile Header -->
+<header class="flex lg:hidden items-center justify-between p-4 bg-white dark:bg-[#1a2634] border-b border-[#f0f2f4] dark:border-[#2a3644]">
+<div class="flex items-center gap-2 font-bold text-lg dark:text-white">
+<span class="material-symbols-outlined text-primary">factory</span>
+                    EFYS Portal
+                </div>
+<button class="text-[#111518] dark:text-white">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</header>
+<!-- Top Header Desktop -->
+<header class="hidden lg:flex items-center justify-between px-8 py-4 bg-white dark:bg-[#1a2634] border-b border-[#f0f2f4] dark:border-[#2a3644]">
+<h2 class="text-xl font-bold text-[#111518] dark:text-white">Panel Genel Bakış</h2>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined text-[#617789] absolute left-3 top-1/2 -translate-y-1/2">search</span>
+<input class="pl-10 pr-4 py-2 rounded-lg border border-[#dbe1e6] dark:border-[#2a3644] dark:bg-[#101a22] text-sm focus:outline-none focus:border-primary w-64 transition-all" placeholder="Rapor veya fatura ara..." type="text"/>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-[#f0f2f4] dark:hover:bg-[#2a3644] relative text-[#617789] dark:text-gray-300 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-[#1a2634]"></span>
+</button>
+</div>
+</header>
+<div class="p-6 lg:p-10 max-w-[1400px] mx-auto w-full flex flex-col gap-6">
+<!-- 1. Critical Warning Banner -->
+<div class="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-4 lg:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm animate-pulse-slow">
+<div class="size-10 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center shrink-0 text-red-600 dark:text-red-200">
+<span class="material-symbols-outlined text-2xl">warning</span>
+</div>
+<div class="flex-1">
+<h3 class="text-red-900 dark:text-red-100 font-bold text-lg">⚠️ DİKKAT: Reaktif ceza sınırına yaklaşmaktasınız!</h3>
+<p class="text-red-700 dark:text-red-300 text-sm mt-1">
+                            Endüktif oran <span class="font-bold">%19</span> seviyesine ulaştı. %20 sınırını aşmak üzeresiniz, lütfen kompanzasyon sistemini kontrol edin.
+                        </p>
+</div>
+<button class="whitespace-nowrap px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-md">
+                        Sistemi Kontrol Et
+                    </button>
+</div>
+<!-- Main Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- LEFT COLUMN: Financials & Gauges -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Financial Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Estimated Bill Card -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col justify-between h-48 relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-2">
+<div class="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded text-primary">
+<span class="material-symbols-outlined text-xl">payments</span>
+</div>
+<h3 class="text-[#617789] dark:text-gray-400 font-medium text-sm">Güncel Tahmini Fatura</h3>
+</div>
+<div class="mt-2">
+<span class="text-4xl font-extrabold tracking-tight text-[#111518] dark:text-white">45.230<span class="text-2xl text-gray-400">,50 ₺</span></span>
+</div>
+</div>
+<div class="relative z-10 mt-auto flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1 text-red-600 dark:text-red-400 font-bold text-sm bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded w-fit">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+12%</span>
+</div>
+<p class="text-xs text-[#617789] dark:text-gray-500 mt-1">Geçen aya göre artış</p>
+</div>
+<button class="text-primary text-sm font-bold hover:underline">Detaylar</button>
+</div>
+</div>
+<!-- Consumption Summary Card -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col justify-between h-48 relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-32 h-32 bg-green-500/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-2">
+<div class="p-1.5 bg-green-50 dark:bg-green-900/30 rounded text-green-600">
+<span class="material-symbols-outlined text-xl">electric_bolt</span>
+</div>
+<h3 class="text-[#617789] dark:text-gray-400 font-medium text-sm">Toplam Tüketim (Bu Ay)</h3>
+</div>
+<div class="mt-2">
+<span class="text-4xl font-extrabold tracking-tight text-[#111518] dark:text-white">12.450 <span class="text-xl text-gray-400 font-medium">kWh</span></span>
+</div>
+</div>
+<div class="relative z-10 mt-auto flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1 text-green-600 dark:text-green-400 font-bold text-sm bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded w-fit">
+<span class="material-symbols-outlined text-sm">trending_flat</span>
+<span>+5%</span>
+</div>
+<p class="text-xs text-[#617789] dark:text-gray-500 mt-1">Ortalama seviyede</p>
+</div>
+<button class="text-primary text-sm font-bold hover:underline">Analiz et</button>
+</div>
+</div>
+</div>
+<!-- Reactive Power Gauges -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Inductive Gauge -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col items-center">
+<div class="w-full flex justify-between items-center mb-4">
+<h3 class="font-bold text-[#111518] dark:text-white flex items-center gap-2">
+<span class="size-2 rounded-full bg-red-500 animate-pulse"></span>
+                                        Endüktif Oran
+                                    </h3>
+<span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">Hedef: &lt;20%</span>
+</div>
+<!-- CSS Gauge Visualization -->
+<div class="relative w-48 h-24 overflow-hidden mt-2">
+<div class="absolute w-48 h-48 rounded-full gauge-mask border-[20px] border-transparent" style="background: conic-gradient(from 180deg at 50% 50%, #22c55e 0deg 144deg, #ef4444 144deg 180deg);">
+</div>
+<!-- Needle for 19% (Almost at the limit of 20% which is 144deg approx in 180deg half circle) -->
+<!-- 19% of 20% limit logic: 20% = limit. Let's map 0-30% scale. 19 is approx 63% of range. 180deg * 0.63 = 113deg -->
+<div class="absolute bottom-0 left-1/2 w-[2px] h-full bg-transparent origin-bottom transition-transform duration-1000 ease-out" style="transform: rotate(-30deg);"> <!-- Adjusted rotation visual -->
+<div class="w-1 h-[90%] bg-[#111518] dark:bg-white mx-auto rounded-t-full relative top-2"></div>
+</div>
+</div>
+<div class="mt-[-10px] text-center z-10">
+<p class="text-3xl font-bold text-red-600 dark:text-red-400">%19,2</p>
+<p class="text-xs text-red-500 font-medium">Riskli Bölge</p>
+</div>
+</div>
+<!-- Capacitive Gauge -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex flex-col items-center">
+<div class="w-full flex justify-between items-center mb-4">
+<h3 class="font-bold text-[#111518] dark:text-white flex items-center gap-2">
+<span class="size-2 rounded-full bg-green-500"></span>
+                                        Kapasitif Oran
+                                    </h3>
+<span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">Hedef: &lt;15%</span>
+</div>
+<!-- CSS Gauge Visualization -->
+<div class="relative w-48 h-24 overflow-hidden mt-2">
+<div class="absolute w-48 h-48 rounded-full gauge-mask border-[20px] border-transparent" style="background: conic-gradient(from 180deg at 50% 50%, #22c55e 0deg 108deg, #ef4444 108deg 180deg);">
+</div>
+<!-- Needle for 4% (Safe) -->
+<!-- Scale 0-25%. 4% is 16% of range. 180deg * 0.16 = 28deg -->
+<div class="absolute bottom-0 left-1/2 w-[2px] h-full bg-transparent origin-bottom transition-transform duration-1000 ease-out" style="transform: rotate(-70deg);"> <!-- Adjusted rotation visual -->
+<div class="w-1 h-[90%] bg-[#111518] dark:bg-white mx-auto rounded-t-full relative top-2"></div>
+</div>
+</div>
+<div class="mt-[-10px] text-center z-10">
+<p class="text-3xl font-bold text-green-600 dark:text-green-400">%4,1</p>
+<p class="text-xs text-green-600 dark:text-green-400 font-medium">Normal Seviye</p>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Chart & Quick Actions -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Daily Consumption Chart -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm flex-1 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-bold text-[#111518] dark:text-white text-lg">Günlük Tüketim</h3>
+<select class="bg-transparent text-sm border-none text-[#617789] dark:text-gray-400 focus:ring-0 p-0 cursor-pointer">
+<option>Son 7 Gün</option>
+<option>Son 30 Gün</option>
+</select>
+</div>
+<!-- Custom CSS Bar Chart -->
+<div class="flex-1 flex items-end justify-between gap-2 h-64 w-full pt-4 border-b border-dashed border-gray-200 dark:border-gray-700 relative">
+<!-- Grid Lines simulated -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none text-xs text-gray-400">
+<div class="border-t border-gray-100 dark:border-gray-800 w-full h-0"></div>
+<div class="border-t border-gray-100 dark:border-gray-800 w-full h-0"></div>
+<div class="border-t border-gray-100 dark:border-gray-800 w-full h-0"></div>
+<div class="border-t border-gray-100 dark:border-gray-800 w-full h-0"></div>
+<div class="border-t border-gray-100 dark:border-gray-800 w-full h-0"></div>
+</div>
+<!-- Bar 1 -->
+<div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+<div class="w-full max-w-[24px] bg-primary/20 dark:bg-primary/30 rounded-t-sm h-[40%] group-hover:bg-primary transition-all relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">1200 kWh</div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Pzt</span>
+</div>
+<!-- Bar 2 -->
+<div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+<div class="w-full max-w-[24px] bg-primary/20 dark:bg-primary/30 rounded-t-sm h-[65%] group-hover:bg-primary transition-all relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">1850 kWh</div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Sal</span>
+</div>
+<!-- Bar 3 -->
+<div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+<div class="w-full max-w-[24px] bg-primary/20 dark:bg-primary/30 rounded-t-sm h-[55%] group-hover:bg-primary transition-all relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">1600 kWh</div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Çar</span>
+</div>
+<!-- Bar 4 -->
+<div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+<div class="w-full max-w-[24px] bg-primary/20 dark:bg-primary/30 rounded-t-sm h-[80%] group-hover:bg-primary transition-all relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">2100 kWh</div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Per</span>
+</div>
+<!-- Bar 5 -->
+<div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+<div class="w-full max-w-[24px] bg-primary rounded-t-sm h-[70%] relative shadow-lg shadow-primary/30">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">1950 kWh</div>
+</div>
+<span class="text-xs text-gray-900 dark:text-white font-bold">Cum</span>
+</div>
+<!-- Bar 6 -->
+<div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+<div class="w-full max-w-[24px] bg-primary/20 dark:bg-primary/30 rounded-t-sm h-[30%] group-hover:bg-primary transition-all relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">800 kWh</div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Cmt</span>
+</div>
+<!-- Bar 7 -->
+<div class="flex flex-col items-center gap-2 group w-full h-full justify-end z-10">
+<div class="w-full max-w-[24px] bg-primary/20 dark:bg-primary/30 rounded-t-sm h-[25%] group-hover:bg-primary transition-all relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">600 kWh</div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Paz</span>
+</div>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+<h3 class="font-bold text-[#111518] dark:text-white text-lg mb-4">Hızlı İşlemler</h3>
+<div class="space-y-3">
+<button class="w-full flex items-center justify-between p-3 rounded-lg border border-[#f0f2f4] hover:bg-background-light dark:border-[#2a3644] dark:hover:bg-[#101a22] transition-colors group">
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">download</span>
+</div>
+<div class="text-left">
+<p class="text-sm font-semibold text-[#111518] dark:text-white">Faturayı İndir</p>
+<p class="text-xs text-[#617789] dark:text-gray-500">Son kesilen faturayı PDF al</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-3 rounded-lg border border-[#f0f2f4] hover:bg-background-light dark:border-[#2a3644] dark:hover:bg-[#101a22] transition-colors group">
+<div class="flex items-center gap-3">
+<div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg text-orange-600">
+<span class="material-symbols-outlined">report_problem</span>
+</div>
+<div class="text-left">
+<p class="text-sm font-semibold text-[#111518] dark:text-white">Arıza Bildir</p>
+<p class="text-xs text-[#617789] dark:text-gray-500">Teknik ekibe sorun ilet</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-orange-600">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-3 rounded-lg border border-[#f0f2f4] hover:bg-background-light dark:border-[#2a3644] dark:hover:bg-[#101a22] transition-colors group">
+<div class="flex items-center gap-3">
+<div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600">
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<div class="text-left">
+<p class="text-sm font-semibold text-[#111518] dark:text-white">Danışmanla Görüş</p>
+<p class="text-xs text-[#617789] dark:text-gray-500">Enerji tasarrufu hakkında</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-green-600">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

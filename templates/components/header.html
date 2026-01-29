@@ -1,0 +1,190 @@
+<!-- EFYS Header -->
+<header class="header">
+  <!-- Left: Mobile Menu + Page Title -->
+  <div style="display: flex; align-items: center; gap: 16px">
+    <!-- Mobile Menu Toggle -->
+    <button id="mobile-menu-toggle" style="
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+      " onclick="toggleMobileMenu()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+    </button>
+
+    <!-- Page Title -->
+    <h1 style="
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+      ">
+      {% block page_title %}Dashboard{% endblock %}
+    </h1>
+  </div>
+
+  <!-- Right: Actions -->
+  <div style="display: flex; align-items: center; gap: 16px">
+    <div style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-page);
+      ">
+      <div>
+        <div style="font-size: 0.7rem; color: var(--color-text-secondary)">Tarih</div>
+        <div style="font-weight: 600" id="headerDate">-</div>
+      </div>
+      <div style="width: 1px; height: 24px; background: var(--color-border)"></div>
+      <div>
+        <div style="font-size: 0.7rem; color: var(--color-text-secondary)">Saat</div>
+        <div style="font-weight: 600; letter-spacing: 0.5px" id="headerClock">--:--:--</div>
+      </div>
+    </div>
+    <!-- Search -->
+    <div style="position: relative">
+      <input type="text" placeholder="Abone veya sayaç ara..." style="
+          width: 280px;
+          padding: 8px 12px 8px 36px;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          background: var(--color-bg-page);
+          font-size: 0.875rem;
+          color: var(--color-text-body);
+        " />
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="2"
+        style="
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+        ">
+        <circle cx="11" cy="11" r="8" />
+        <path d="M21 21l-4.35-4.35" />
+      </svg>
+    </div>
+
+    <!-- Notifications -->
+    <button style="
+        position: relative;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+      ">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" stroke-width="2">
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 01-3.46 0" />
+      </svg>
+      <span style="
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          width: 8px;
+          height: 8px;
+          background: var(--color-danger);
+          border-radius: 50%;
+        "></span>
+    </button>
+
+    <!-- Quick Actions -->
+    <div class="dropdown" style="position: relative">
+      <button class="btn btn-primary btn-sm" onclick="toggleDropdown(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Hızlı İşlem
+      </button>
+      <div class="dropdown-menu" style="
+          display: none;
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 8px;
+          background: var(--color-bg-card);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-lg);
+          min-width: 200px;
+          z-index: 100;
+        ">
+        <a href="{{ url_for('billing.calculate') }}" style="
+            display: block;
+            padding: 10px 16px;
+            color: var(--color-text-body);
+            font-size: 0.875rem;
+          ">
+          Fatura Hesapla
+        </a>
+        <a href="{{ url_for('subscribers.card') }}" style="
+            display: block;
+            padding: 10px 16px;
+            color: var(--color-text-body);
+            font-size: 0.875rem;
+          ">
+          Yeni Abone Ekle
+        </a>
+        <hr style="
+            border: none;
+            border-top: 1px solid var(--color-border);
+            margin: 4px 0;
+          " />
+        <a href="{{ url_for('reports.index_report') }}" style="
+            display: block;
+            padding: 10px 16px;
+            color: var(--color-text-body);
+            font-size: 0.875rem;
+          ">
+          Rapor Oluştur
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  @media (max-width: 1024px) {
+    #mobile-menu-toggle {
+      display: block !important;
+    }
+  }
+</style>
+
+<script>
+  function toggleMobileMenu() {
+    document.getElementById( "sidebar" ).classList.toggle( "open" );
+  }
+
+  function toggleDropdown( btn ) {
+    const menu = btn.nextElementSibling;
+    menu.style.display = menu.style.display === "none" ? "block" : "none";
+  }
+
+  function updateHeaderClock() {
+    const now = new Date();
+    const dateEl = document.getElementById( "headerDate" );
+    const timeEl = document.getElementById( "headerClock" );
+    if ( dateEl ) dateEl.textContent = now.toLocaleDateString( "tr-TR" );
+    if ( timeEl ) timeEl.textContent = now.toLocaleTimeString( "tr-TR" );
+  }
+
+  updateHeaderClock();
+  setInterval( updateHeaderClock, 1000 );
+
+  // Close dropdown on outside click
+  document.addEventListener( "click", function ( e ) {
+    if ( !e.target.closest( ".dropdown" ) ) {
+      document
+        .querySelectorAll( ".dropdown-menu" )
+        .forEach( ( m ) => ( m.style.display = "none" ) );
+    }
+  } );
+</script>

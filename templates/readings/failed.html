@@ -1,0 +1,65 @@
+{% extends 'base.html' %} {% block title %}Başarısız Okumalar{% endblock %} {%
+block page_title %}Başarısız Okumalar{% endblock %} {% set breadcrumb =
+[{'name': 'Okuma İşlemleri', 'url': url_for('readings.index')}, {'name':
+'Başarısız'}] %} {% block content %}
+<div class="alert alert-danger mb-4">
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="15" y1="9" x2="9" y2="15" />
+    <line x1="9" y1="9" x2="15" y2="15" />
+  </svg>
+  <div>
+    <strong>5 sayaç</strong> okunamadı. Retry için sayaçları seçin ve tekrar
+    deneyin.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Başarısız Okuma Listesi</h3>
+    <button class="btn btn-cta btn-sm">Seçilenleri Tekrar Dene</button>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th><input type="checkbox" /></th>
+          <th>Sayaç</th>
+          <th>Abone</th>
+          <th>Son Deneme</th>
+          <th>Hata</th>
+          <th>Deneme</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="checkbox" /></td>
+          <td>M-1234</td>
+          <td>Merkez Mağaza</td>
+          <td>29.01.2026 06:43</td>
+          <td>Bağlantı zaman aşımı</td>
+          <td>3/3</td>
+          <td><button class="btn btn-secondary btn-sm">Tekrar</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" /></td>
+          <td>M-5678</td>
+          <td>Delta Makina</td>
+          <td>29.01.2026 06:42</td>
+          <td>Modem yanıt yok</td>
+          <td>3/3</td>
+          <td><button class="btn btn-secondary btn-sm">Tekrar</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

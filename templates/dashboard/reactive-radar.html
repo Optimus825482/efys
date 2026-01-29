@@ -1,0 +1,382 @@
+{% extends 'base.html' %} {% block title %}Reaktif Enerji Radar{% endblock %} {%
+block page_title %}Reaktif Enerji Radar{% endblock %} {% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div
+      class="kpi-card-icon {% if reactive.ortalama_cos_phi >= 0.9 %}success{% elif reactive.ortalama_cos_phi >= 0.85 %}warning{% else %}danger{% endif %}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">
+      {{ "%.3f"|format(reactive.ortalama_cos_phi) }}
+    </div>
+    <div class="kpi-card-label">Ortalama Cos φ</div>
+    <div class="kpi-card-change {% if reactive.ortalama_cos_phi >= 0.9 %}positive{% else %}negative{% endif %}">
+      {% if reactive.ortalama_cos_phi >= 0.9 %}Normal{% elif
+      reactive.ortalama_cos_phi >= 0.85 %}Dikkat{% else %}Kritik{% endif %}
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon warning">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">
+      {{ "%.1f"|format(reactive.enduktif_oran) }}%
+    </div>
+    <div class="kpi-card-label">Endüktif Oran</div>
+    <div class="kpi-card-change">{{ reactive.enduktif_abone }} abone</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon info">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">
+      {{ "%.1f"|format(reactive.kapasitif_oran) }}%
+    </div>
+    <div class="kpi-card-label">Kapasitif Oran</div>
+    <div class="kpi-card-change">{{ reactive.kapasitif_abone }} abone</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon danger">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">{{ reactive.ceza_riski }}</div>
+    <div class="kpi-card-label">Ceza Riski Olan</div>
+    <div class="kpi-card-change negative">Cos φ < 0.85</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-2 gap-4 mb-4">
+    <!-- Power Factor Gauge -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Güç Faktörü Göstergesi</h3>
+      </div>
+      <div class="card-body" style="display: flex; flex-direction: column; align-items: center">
+        <div id="gaugeChart" style="width: 100%; height: 300px"></div>
+        <div style="text-align: center; margin-top: 16px">
+          <div
+            class="badge {% if reactive.ortalama_cos_phi >= 0.9 %}badge-success{% elif reactive.ortalama_cos_phi >= 0.85 %}badge-warning{% else %}badge-danger{% endif %}"
+            style="font-size: 1rem; padding: 12px 24px">
+            {% if reactive.ortalama_cos_phi >= 0.9 %} ✓ Ceza Yok - Normal Aralık
+            {% elif reactive.ortalama_cos_phi >= 0.85 %} ⚠ Dikkat - Sınıra Yakın
+            {% else %} ✗ Reaktif Ceza Uygulanır {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reactive Distribution -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Reaktif Enerji Dağılımı</h3>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height: 300px">
+          <canvas id="distributionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trend Chart -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title">Güç Faktörü Trendi (Son 30 Gün)</h3>
+      <select class="form-select" style="width: auto" onchange="changePeriod(this.value)">
+        <option value="7">Son 7 Gün</option>
+        <option value="30" selected>Son 30 Gün</option>
+        <option value="90">Son 90 Gün</option>
+      </select>
+    </div>
+    <div class="card-body">
+      <div class="chart-container" style="height: 300px">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Critical Subscribers -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Kritik Aboneler (Cos φ < 0.85)</h3>
+          <button class="btn btn-primary btn-sm" onclick="exportCritical()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Dışa Aktar
+          </button>
+    </div>
+    <div class="card-body" style="padding: 0">
+      <div id="criticalGrid" style="height: 400px; width: 100%"></div>
+    </div>
+  </div>
+  {% endblock %} {% block scripts %}
+  <!-- Google Charts for Gauge -->
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <script>
+    // Google Charts Gauge
+    google.charts.load( 'current', { 'packages': ['gauge'] } );
+    google.charts.setOnLoadCallback( drawGauge );
+
+    function drawGauge() {
+      const cosPhi = {{ reactive.ortalama_cos_phi | default ( 0.92 )
+    }};
+
+    const data = google.visualization.arrayToDataTable( [
+      ['Label', 'Value'],
+      ['Cos φ', cosPhi]
+    ] );
+
+    const options = {
+      width: 400,
+      height: 300,
+      min: 0.7,
+      max: 1.0,
+      greenFrom: 0.90,
+      greenTo: 1.0,
+      yellowFrom: 0.85,
+      yellowTo: 0.90,
+      redFrom: 0.70,
+      redTo: 0.85,
+      minorTicks: 5,
+      majorTicks: ['0.7', '0.8', '0.9', '1.0'],
+      animation: {
+        duration: 1000,
+        easing: 'inAndOut'
+      }
+    };
+
+    const chart = new google.visualization.Gauge( document.getElementById( 'gaugeChart' ) );
+    chart.draw( data, options );
+  }
+
+    // Distribution Chart
+    const distributionCtx = document.getElementById( 'distributionChart' ).getContext( '2d' );
+    new Chart( distributionCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Endüktif', 'Kapasitif', 'Normal'],
+        datasets: [{
+          data: [
+            {{ reactive.enduktif_oran }},
+        {{ reactive.kapasitif_oran }},
+      100 - {{ reactive.enduktif_oran }} - {{ reactive.kapasitif_oran }}
+              ],
+      backgroundColor: ['#EF4444', '#3B82F6', '#10B981']
+          }]
+      },
+      options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: context => {
+              return context.label + ': ' + context.raw.toFixed( 1 ) + '%';
+            }
+          }
+        }
+      }
+    }
+  } );
+
+    // Trend Chart (Real data from API)
+    const trendCtx = document.getElementById( 'trendChart' ).getContext( '2d' );
+    const trendChart = new Chart( trendCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Ortalama Cos φ',
+            data: [],
+            borderColor: '#2563EB',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'Hedef (0.90)',
+            data: [],
+            borderColor: '#10B981',
+            borderDash: [5, 5],
+            pointRadius: 0
+          },
+          {
+            label: 'Kritik Sınır (0.85)',
+            data: [],
+            borderColor: '#EF4444',
+            borderDash: [5, 5],
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' }
+        },
+        scales: {
+          y: {
+            min: 0.7,
+            max: 1.0,
+            ticks: {
+              callback: value => value.toFixed( 2 )
+            }
+          }
+        }
+      }
+    } );
+
+    // Load real data from API
+    fetch( '/api/reactive/trend?days=30' )
+      .then( response => response.json() )
+      .then( result => {
+        if ( result.success ) {
+          const data = result.data;
+          trendChart.data.labels = data.labels;
+          trendChart.data.datasets[0].data = data.avg_pf;
+          trendChart.data.datasets[1].data = Array( data.labels.length ).fill( 0.90 );
+          trendChart.data.datasets[2].data = Array( data.labels.length ).fill( 0.85 );
+          trendChart.update();
+        }
+      } )
+      .catch( error => console.error( 'Trend data load error:', error ) );
+
+    // AG-Grid for Critical Subscribers
+    const columnDefs = [
+      {
+        headerName: 'Abone Kodu',
+        field: 'subscriber_code',
+        width: 150,
+        pinned: 'left',
+        cellStyle: { fontWeight: '500' }
+      },
+      {
+        headerName: 'Abone Adı',
+        field: 'name',
+        width: 250
+      },
+      {
+        headerName: 'Cos φ',
+        field: 'power_factor',
+        width: 120,
+        valueFormatter: params => params.value ? params.value.toFixed( 3 ) : '0.000',
+        cellStyle: params => ( {
+          color: params.value < 0.85 ? '#EF4444' : '#F59E0B',
+          fontWeight: '600'
+        } )
+      },
+      {
+        headerName: 'Aktif Enerji (kWh)',
+        field: 'active_energy',
+        width: 160,
+        valueFormatter: params => params.value ? params.value.toLocaleString( 'tr-TR' ) : '0'
+      },
+      {
+        headerName: 'Reaktif Enerji (kVArh)',
+        field: 'reactive_energy',
+        width: 180,
+        valueFormatter: params => params.value ? params.value.toLocaleString( 'tr-TR' ) : '0'
+      },
+      {
+        headerName: 'Tahmini Ceza (₺)',
+        field: 'estimated_penalty',
+        width: 150,
+        valueFormatter: params => params.value ? '₺' + params.value.toLocaleString( 'tr-TR' ) : '₺0',
+        cellStyle: { color: '#EF4444', fontWeight: '600' }
+      },
+      {
+        headerName: 'Durum',
+        field: 'status',
+        width: 120,
+        cellRenderer: params => {
+          const pf = params.data.power_factor || 0;
+          if ( pf < 0.80 ) return '<span class="badge badge-danger">Kritik</span>';
+          if ( pf < 0.85 ) return '<span class="badge badge-warning">Uyarı</span>';
+          return '<span class="badge badge-info">İzleniyor</span>';
+        }
+      }
+    ];
+
+    // Demo data - replace with real API call
+    const criticalData = Array.from( { length: {{ reactive.ceza_riski }}}, ( _, i ) => ( {
+      subscriber_code: `AB${1000 + i}`,
+      name: `Abone ${i + 1}`,
+      power_factor: 0.75 + Math.random() * 0.1,
+      active_energy: 10000 + Math.random() * 50000,
+      reactive_energy: 5000 + Math.random() * 20000,
+      estimated_penalty: 500 + Math.random() * 2000,
+      status: 'critical'
+    } ));
+
+    const gridOptions = {
+      columnDefs: columnDefs,
+      rowData: criticalData,
+      defaultColDef: {
+        sortable: true,
+        filter: true,
+        resizable: true
+      },
+      animateRows: true,
+      onGridReady: params => {
+        params.api.sizeColumnsToFit();
+      }
+    };
+
+    document.addEventListener( 'DOMContentLoaded', () => {
+      const gridDiv = document.querySelector( '#criticalGrid' );
+      new agGrid.Grid( gridDiv, gridOptions );
+    } );
+
+    function changePeriod( days ) {
+      // TODO: Fetch data for selected period
+      console.log( 'Changing period to:', days, 'days' );
+    }
+
+    function exportCritical() {
+      const rows = [];
+      gridOptions.api.forEachNode( node => rows.push( node.data ) );
+
+      const csv = [
+        ['Abone Kodu', 'Abone Adı', 'Cos φ', 'Aktif Enerji', 'Reaktif Enerji', 'Tahmini Ceza'].join( ',' ),
+        ...rows.map( r => [
+          r.subscriber_code,
+          r.name,
+          r.power_factor,
+          r.active_energy,
+          r.reactive_energy,
+          r.estimated_penalty
+        ].join( ',' ) )
+      ].join( '\n' );
+
+      const blob = new Blob( [csv], { type: 'text/csv' } );
+      const url = window.URL.createObjectURL( blob );
+      const a = document.createElement( 'a' );
+      a.href = url;
+      a.download = `critical_subscribers_${new Date().toISOString()}.csv`;
+      a.click();
+    }
+  </script>
+  {% endblock %}

@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}ERP Entegrasyonu{% endblock %}
+{% block page_title %}ERP Köprüsü{% endblock %}
+{% set breadcrumb = [{'name': 'Akıllı Sistemler', 'url': url_for('smart.index')}, {'name': 'ERP Köprüsü'}] %}
+{% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+    <div class="kpi-card">
+        <div class="kpi-card-value" style="color: var(--color-success)">● Bağlı</div>
+        <div class="kpi-card-label">ERP Durumu</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">1,247</div>
+        <div class="kpi-card-label">Senkronize Kayıt</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">5 dk</div>
+        <div class="kpi-card-label">Son Senkronizasyon</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-value">99.8%</div>
+        <div class="kpi-card-label">Uptime</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-4">
+    <!-- Entegrasyon Ayarları -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">⚙️ Entegrasyon Ayarları</h3>
+        </div>
+        <div class="card-body">
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">ERP Sistemi</label>
+                <select class="form-select">
+                    <option selected>SAP Business One</option>
+                    <option>Microsoft Dynamics</option>
+                    <option>Oracle NetSuite</option>
+                    <option>Logo Tiger</option>
+                    <option>Netsis</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">API Endpoint</label>
+                <input type="text" class="form-control" value="https://erp.gonenobs.com/api/v2" readonly>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Senkronizasyon Sıklığı</label>
+                <select class="form-select">
+                    <option>Her 5 dakika</option>
+                    <option selected>Her 15 dakika</option>
+                    <option>Her saat</option>
+                    <option>Günlük</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-primary">Ayarları Kaydet</button>
+                <button class="btn btn-outline-primary">Bağlantıyı Test Et</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Veri Akışı -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🔄 Veri Akış Şeması</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div
+                        style="width: 100px; text-align: center; padding: 12px; background: var(--color-primary-100); border-radius: var(--radius-md);">
+                        <div style="font-weight: 600; color: var(--color-primary);">EFYS</div>
+                    </div>
+                    <div style="flex: 1; height: 2px; background: var(--color-primary); position: relative;">
+                        <div
+                            style="position: absolute; right: 0; top: -4px; border: solid var(--color-primary); border-width: 0 2px 2px 0; padding: 4px; transform: rotate(-45deg);">
+                        </div>
+                    </div>
+                    <div
+                        style="width: 100px; text-align: center; padding: 12px; background: var(--color-success-bg); border-radius: var(--radius-md);">
+                        <div style="font-weight: 600; color: var(--color-success);">ERP</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.875rem; color: var(--color-text-secondary); padding-left: 116px;">
+                    • Fatura verileri<br>
+                    • Abone bilgileri<br>
+                    • Ödeme kayıtları
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div
+                        style="width: 100px; text-align: center; padding: 12px; background: var(--color-success-bg); border-radius: var(--radius-md);">
+                        <div style="font-weight: 600; color: var(--color-success);">ERP</div>
+                    </div>
+                    <div style="flex: 1; height: 2px; background: var(--color-success); position: relative;">
+                        <div
+                            style="position: absolute; right: 0; top: -4px; border: solid var(--color-success); border-width: 0 2px 2px 0; padding: 4px; transform: rotate(-45deg);">
+                        </div>
+                    </div>
+                    <div
+                        style="width: 100px; text-align: center; padding: 12px; background: var(--color-primary-100); border-radius: var(--radius-md);">
+                        <div style="font-weight: 600; color: var(--color-primary);">EFYS</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.875rem; color: var(--color-text-secondary); padding-left: 116px;">
+                    • Tahsilat bildirimleri<br>
+                    • Cari hesap mutabakatı
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Senkronizasyon Logları -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">📋 Senkronizasyon Logları</h3>
+    </div>
+    <div class="card-body">
+        <div id="logsGrid" style="height: 350px;" class="ag-theme-alpine"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var gridOptions = {
+        columnDefs: [
+            { field: 'timestamp', headerName: 'Zaman', width: 180 },
+            {
+                field: 'direction', headerName: 'Yön', width: 120,
+                cellRenderer: params => params.value === 'EFYS → ERP' ?
+                    '<span style="color: #3B82F6;">↗ EFYS → ERP</span>' :
+                    '<span style="color: #10B981;">↙ ERP → EFYS</span>'
+            },
+            { field: 'type', headerName: 'Veri Tipi', width: 150 },
+            { field: 'records', headerName: 'Kayıt Sayısı', width: 120, type: 'numericColumn' },
+            {
+                field: 'status', headerName: 'Durum', width: 120,
+                cellRenderer: params => {
+                    var colors = { 'Başarılı': '#10B981', 'Hata': '#EF4444', 'Beklemede': '#F59E0B' };
+                    return `<span style="color: ${colors[params.value]}; font-weight: bold;">● ${params.value}</span>`;
+                }
+            },
+            { field: 'message', headerName: 'Mesaj', flex: 1 }
+        ],
+        rowData: [
+            { timestamp: '29.01.2026 10:45:23', direction: 'EFYS → ERP', type: 'Fatura', records: 5, status: 'Başarılı', message: '5 fatura ERP sistemine aktarıldı' },
+            { timestamp: '29.01.2026 10:30:15', direction: 'ERP → EFYS', type: 'Ödeme', records: 3, status: 'Başarılı', message: '3 ödeme kaydı güncellendi' },
+            { timestamp: '29.01.2026 10:15:08', direction: 'EFYS → ERP', type: 'Abone', records: 1, status: 'Başarılı', message: 'Yeni abone kaydı oluşturuldu' },
+            { timestamp: '29.01.2026 10:00:00', direction: 'EFYS → ERP', type: 'Fatura', records: 12, status: 'Başarılı', message: 'Toplu fatura aktarımı tamamlandı' },
+            { timestamp: '29.01.2026 09:45:30', direction: 'ERP → EFYS', type: 'Cari', records: 30, status: 'Başarılı', message: 'Cari hesap bakiyeleri senkronize edildi' }
+        ],
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        localeText: AG_GRID_LOCALE_TR
+    };
+
+    agGrid.createGrid( document.getElementById( 'logsGrid' ), gridOptions );
+</script>
+{% endblock %}

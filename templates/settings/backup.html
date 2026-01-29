@@ -1,0 +1,42 @@
+{% extends 'base.html' %} {% block title %}Yedekleme{% endblock %} {% block
+page_title %}Yedekleme ve Geri Yükleme{% endblock %} {% set breadcrumb =
+[{'name': 'Ayarlar', 'url': url_for('settings.index')}, {'name': 'Yedekleme'}]
+%} {% block content %}
+<div class="grid grid-cols-2 gap-4">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Manuel Yedekleme</h3></div>
+    <div class="card-body">
+      <p style="color: var(--color-text-secondary); margin-bottom: 16px">
+        Tüm veritabanı verilerinin yedeğini alın.
+      </p>
+      <button class="btn btn-primary">Yedek Al</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Son Yedekler</h3></div>
+    <div class="card-body" style="padding: 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Boyut</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>29.01.2026 00:00</td>
+            <td>245 MB</td>
+            <td><button class="btn btn-secondary btn-sm">İndir</button></td>
+          </tr>
+          <tr>
+            <td>28.01.2026 00:00</td>
+            <td>243 MB</td>
+            <td><button class="btn btn-secondary btn-sm">İndir</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

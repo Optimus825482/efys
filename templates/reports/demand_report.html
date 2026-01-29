@@ -1,0 +1,144 @@
+{% extends 'base.html' %} {% block title %}Demant Raporu{% endblock %} {% block
+page_title %}Demant Raporu{% endblock %} {% set breadcrumb = [{'name':
+'Raporlama'}, {'name': 'Demant'}] %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">2,845 kW</div>
+    <div class="kpi-card-label">Max Demant (OSB)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-primary)">
+      1,892 kW
+    </div>
+    <div class="kpi-card-label">Ort. Demant</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">66.5%</div>
+    <div class="kpi-card-label">Yük Faktörü</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)">14:00</div>
+    <div class="kpi-card-label">Pik Saati</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">Günlük Max Demant Trendi</h3>
+  </div>
+  <div class="card-body">
+    <div id="demandChart" style="height: 350px"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Abone Bazlı Demant</h3>
+    <button class="grid-export-btn" onclick="exp()">Excel</button>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div
+      id="grid"
+      class="ag-theme-alpine ag-theme-efys"
+      style="height: 350px"
+    ></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Backend data
+  var reportData = {{ report | tojson | safe if report else '{}' }};
+  var dailyData = reportData.daily || [];
+  var gridData = reportData.details || [];
+
+  // Calculate KPIs
+  var maxDemand = gridData.length > 0 ? Math.max(...gridData.map(d => d.max_demand || 0)) : 0;
+  var avgDemand = gridData.length > 0 ? (gridData.reduce((sum, d) => sum + (d.avg_demand || 0), 0) / gridData.length) : 0;
+  // Load Factor can be calculated if we have capacity info, for now using placeholder or simple ratio if data available
+  // Assuming simplified load factor = Avg / Max
+  var loadFactor = maxDemand > 0 ? (avgDemand / maxDemand * 100) : 0;
+
+  // Find Peak Hour (Most frequent peak hour in grid data)
+  var peakHours = gridData.map(d => d.peak_hour_time).filter(h => h);
+  var peakHour = "14:00"; // Default
+  if (peakHours.length > 0) {
+      var modeMap = {};
+      var maxEl = peakHours[0], maxCount = 1;
+      for(var i = 0; i < peakHours.length; i++) {
+          var el = peakHours[i];
+          if(modeMap[el] == null) modeMap[el] = 1;
+          else modeMap[el]++;
+          if(modeMap[el] > maxCount) {
+              maxEl = el;
+              maxCount = modeMap[el];
+          }
+      }
+      peakHour = maxEl;
+  }
+
+  // Update KPI Cards
+  document.querySelector('.kpi-card:nth-child(1) .kpi-card-value').textContent = maxDemand.toLocaleString('tr-TR') + ' kW';
+  document.querySelector('.kpi-card:nth-child(2) .kpi-card-value').textContent = avgDemand.toLocaleString('tr-TR', {maximumFractionDigits: 0}) + ' kW';
+  document.querySelector('.kpi-card:nth-child(3) .kpi-card-value').textContent = loadFactor.toFixed(1) + '%';
+  document.querySelector('.kpi-card:nth-child(4) .kpi-card-value').textContent = peakHour;
+
+  var demandChart = echarts.init(document.getElementById("demandChart"));
+  demandChart.setOption({
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    xAxis: { type: "category", data: dailyData.map(d => d.date), axisLabel: { interval: 2 } },
+    yAxis: { type: "value", axisLabel: { formatter: "{value} kW" } },
+    series: [
+      {
+        name: "Max",
+        type: "line",
+        data: dailyData.map(d => d.max_value),
+        smooth: true,
+        lineStyle: { color: "#EF4444", width: 2 },
+      },
+      {
+        name: "Ortalama",
+        type: "line",
+        data: dailyData.map(d => d.avg_value),
+        smooth: true,
+        lineStyle: { color: "#3B82F6", width: 2 },
+      },
+      {
+        name: "Min",
+        type: "line",
+        data: dailyData.map(d => d.min_value),
+        smooth: true,
+        lineStyle: { color: "#10B981", width: 2 },
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "12%", containLabel: true },
+  });
+
+  agGrid.createGrid(document.getElementById("grid"), {
+    columnDefs: [
+      { headerName: "Abone", field: "subscriber_code", width: 120 },
+      { headerName: "Unvan", field: "name", flex: 1 },
+      {
+        headerName: "Max Demant (kW)",
+        field: "max_demand",
+        width: 150,
+        valueFormatter: (p) => p.value?.toLocaleString("tr-TR"),
+        cellStyle: { fontWeight: "600" },
+      },
+      {
+        headerName: "Ort. Demant (kW)",
+        field: "avg_demand",
+        width: 150,
+        valueFormatter: (p) => p.value?.toLocaleString("tr-TR"),
+      },
+      { headerName: "Pik Saati", field: "peak_hour_time", width: 100 },
+    ],
+    rowData: gridData,
+    localeText: AG_GRID_LOCALE_TR,
+  });
+  function exp() {
+    grid.exportDataAsExcel({ fileName: "demant_raporu.xlsx" });
+  }
+  window.addEventListener("resize", () => demandChart.resize());
+</script>
+{% endblock %}

@@ -1,0 +1,896 @@
+{% extends 'base.html' %} {% block title %}Tarife Yönetimi{% endblock %} {%
+block page_title %}Tarife Yönetimi{% endblock %} {% set breadcrumb = [{'name':
+'Faturalama', 'url': url_for('billing.index')}, {'name': 'Tarifeler'}] %} {% block content %}
+
+<!-- Tab Navigation -->
+<div class="card mb-4">
+  <div class="card-body" style="padding: 0;">
+    <div style="display: flex; border-bottom: 1px solid var(--color-border);">
+      <button class="tab-btn active" onclick="showTab('energy')" id="tab-energy">
+        ⚡ Enerji Tarifeleri
+      </button>
+      <button class="tab-btn" onclick="showTab('distribution')" id="tab-distribution">
+        🔌 OSB Dağıtım Tarifeleri
+      </button>
+      <button class="tab-btn" onclick="showTab('edas')" id="tab-edas">
+        📊 EDAŞ Tavan Tarifeleri
+      </button>
+      <button class="tab-btn" onclick="showTab('settings')" id="tab-settings">
+        ⚙️ Faturalama Ayarları
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 1: Enerji Tarifeleri -->
+<div id="panel-energy" class="tab-panel active">
+  <!-- EPDK Info Banner -->
+  <div class="alert alert-info mb-4" style="display: flex; align-items: center; gap: 12px">
+    <span style="font-size: 1.5rem;">📋</span>
+    <div>
+      <strong>EPDK 2026 Tarifeleri Aktif</strong> - Son güncelleme: 01.01.2026 |
+      Enerji tarifeleri aboneye atanır ve T1/T2/T3 zamanlı hesaplamalarda kullanılır.
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-4 gap-4 mb-4">
+    <div class="kpi-card">
+      <div class="kpi-card-value" id="kpi-tariff-count">{{ tariffs|length if tariffs else 0 }}</div>
+      <div class="kpi-card-label">Aktif Tarife</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-danger)" id="kpi-t1">-</div>
+      <div class="kpi-card-label">Ort. T1 (Gündüz)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-warning)" id="kpi-t2">-</div>
+      <div class="kpi-card-label">Ort. T2 (Puant)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-success)" id="kpi-t3">-</div>
+      <div class="kpi-card-label">Ort. T3 (Gece)</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-4">
+    <!-- Tariff Grid -->
+    <div class="card" style="grid-column: span 2">
+      <div class="card-header">
+        <h3 class="card-title">Enerji Tarifeleri (Aboneye Atanan)</h3>
+        <button class="btn btn-primary" onclick="openEnergyTariffModal()">+ Yeni Tarife</button>
+      </div>
+      <div class="card-body" style="padding: 0">
+        <div id="energyTariffGrid" class="ag-theme-alpine ag-theme-efys" style="height: 350px; width: 100%"></div>
+      </div>
+    </div>
+
+    <!-- Comparison Chart -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Tarife Karşılaştırma</h3>
+      </div>
+      <div class="card-body">
+        <div id="comparisonChart" class="echart-container" style="height: 310px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: OSB Dağıtım Tarifeleri -->
+<div id="panel-distribution" class="tab-panel" style="display: none;">
+  <div class="alert alert-warning mb-4" style="display: flex; align-items: center; gap: 12px">
+    <span style="font-size: 1.5rem;">⚠️</span>
+    <div>
+      <strong>EPDK Onay Gerekli</strong> - OSB dağıtım tarifeleri EPDK'ya bildirilmeli ve EDAŞ tavanını aşmamalıdır.
+      Hesaplanan tarife EDAŞ tavanını aşarsa, otomatik olarak EDAŞ tarifesi uygulanır.
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4 mb-4">
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-primary)">{{ osb_tariffs[0].og_rate|default(25.00) if
+        osb_tariffs else 25.00 }} kr/kWh</div>
+      <div class="kpi-card-label">OG Dağıtım Bedeli (Orta Gerilim)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-secondary)">{{ osb_tariffs[0].ag_rate|default(30.00) if
+        osb_tariffs else 30.00 }} kr/kWh</div>
+      <div class="kpi-card-label">AG Dağıtım Bedeli (Alçak Gerilim)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">OSB Dağıtım Tarifeleri (EPDK Onaylı)</h3>
+      <button class="btn btn-primary" onclick="openDistributionModal()">+ Yeni Tarife</button>
+    </div>
+    <div class="card-body" style="padding: 0">
+      <div id="distributionGrid" class="ag-theme-alpine ag-theme-efys" style="height: 300px; width: 100%"></div>
+    </div>
+  </div>
+
+  <!-- DGG Hesaplama Bilgi -->
+  <div class="card mt-4">
+    <div class="card-header">
+      <h3 class="card-title">Dağıtım Gelir Gereksinimi (DGG) Formülü</h3>
+    </div>
+    <div class="card-body">
+      <div
+        style="background: var(--color-bg-page); padding: 16px; border-radius: var(--radius-md); font-family: monospace;">
+        <strong>DGG = (e + f + g + h + i + j)</strong><br><br>
+        e: Geçmiş yıl yatırım giderleri<br>
+        f: Uygulama yılı yatırım giderleri<br>
+        g: İşletme giderleri (personel + bakım + dış hizmet)<br>
+        h: Gelir düzeltme bileşeni<br>
+        i: Diğer hizmet giderleri (sayaç okuma + faturalama + müşteri hizmetleri)<br>
+        j: Kayıp elektrik bedeli<br><br>
+        <strong>Birim Dağıtım Bedeli = DGG / Toplam Satış (kWh)</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: EDAŞ Tavan Tarifeleri -->
+<div id="panel-edas" class="tab-panel" style="display: none;">
+  <div class="alert alert-info mb-4" style="display: flex; align-items: center; gap: 12px">
+    <span style="font-size: 1.5rem;">📊</span>
+    <div>
+      <strong>Bölgesel EDAŞ Tarifeleri</strong> - OSB dağıtım bedeli bu tavanı aşamaz.
+      Gönen OSB, Uludağ EDAŞ bölgesindedir.
+    </div>
+  </div>
+
+  <div class="grid grid-cols-4 gap-4 mb-4">
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-primary)">{{
+        edas_tariffs[0].single_term_og_rate|default(32.50) if edas_tariffs else 32.50 }} kr</div>
+      <div class="kpi-card-label">OG Tek Terimli Tavan</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-secondary)">{{
+        edas_tariffs[0].single_term_ag_rate|default(38.75) if edas_tariffs else 38.75 }} kr</div>
+      <div class="kpi-card-label">AG Tek Terimli Tavan</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-warning)">{{
+        edas_tariffs[0].dual_term_capacity_rate|default(4500) if edas_tariffs else 4500 }} TL/kW</div>
+      <div class="kpi-card-label">Çift Terimli Güç Bedeli</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-value" style="color: var(--color-success)">{{
+        edas_tariffs[0].dual_term_energy_rate|default(18.50) if edas_tariffs else 18.50 }} kr</div>
+      <div class="kpi-card-label">Çift Terimli Enerji</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">EDAŞ Bölge Tarifeleri (Tavan Kontrol)</h3>
+      <button class="btn btn-primary" onclick="openEdasModal()">+ EDAŞ Tarifesi Ekle</button>
+    </div>
+    <div class="card-body" style="padding: 0">
+      <div id="edasGrid" class="ag-theme-alpine ag-theme-efys" style="height: 300px; width: 100%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: Faturalama Ayarları -->
+<div id="panel-settings" class="tab-panel" style="display: none;">
+  <div class="alert alert-warning mb-4" style="display: flex; align-items: center; gap: 12px">
+    <span style="font-size: 1.5rem;">⚙️</span>
+    <div>
+      <strong>Sistem Ayarları</strong> - Bu ayarlar tüm fatura hesaplamalarını etkiler. Dikkatli değiştirin!
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <!-- Vergi ve Bedeller -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Vergi ve Ek Bedeller</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">KDV Oranı (%)</label>
+          <input type="number" class="form-input" id="setting-kdv"
+            value="{{ settings.kdv_rate * 100 if settings else 20 }}" step="1">
+          <small class="form-help">Standart KDV oranı: %20</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">BTV Oranı (%)</label>
+          <input type="number" class="form-input" id="setting-btv"
+            value="{{ settings.btv_rate * 100 if settings else 5 }}" step="0.1">
+          <small class="form-help">Belediye Tüketim Vergisi: %5</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">TEİAŞ İletim Bedeli (TL/kWh)</label>
+          <input type="number" class="form-input" id="setting-transmission"
+            value="{{ settings.transmission_fee_rate if settings else 0.035 }}" step="0.001">
+          <small class="form-help">Ulusal iletim sistemi bedeli</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Enerji Alış Birim Maliyeti (TL/kWh)</label>
+          <input type="number" class="form-input" id="setting-energy-cost"
+            value="{{ settings.energy_unit_cost if settings else 2.85 }}" step="0.01">
+          <small class="form-help">Tedarikçiden alış fiyatı (paçal)</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reaktif Enerji Ayarları -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Reaktif Enerji Ceza Ayarları</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Reaktif Ceza Birim Fiyatı (TL/kVArh)</label>
+          <input type="number" class="form-input" id="setting-reactive"
+            value="{{ settings.reactive_penalty_rate if settings else 0.89 }}" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Endüktif Limit (%)</label>
+          <input type="number" class="form-input" id="setting-inductive"
+            value="{{ settings.inductive_limit * 100 if settings else 20 }}" step="1">
+          <small class="form-help">EPDK Kuralı: Endüktif/Aktif > %20 ise ceza</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kapasitif Limit (%)</label>
+          <input type="number" class="form-input" id="setting-capacitive"
+            value="{{ settings.capacitive_limit * 100 if settings else 15 }}" step="1">
+          <small class="form-help">EPDK Kuralı: Kapasitif/Aktif > %15 ise ceza</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hedef Kayıp Oranı (%)</label>
+          <input type="number" class="form-input" id="setting-loss"
+            value="{{ settings.loss_percentage if settings else 2.5 }}" step="0.1">
+          <small class="form-help">OSB hedef teknik kayıp oranı</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-body" style="display: flex; justify-content: flex-end; gap: 12px;">
+      <button class="btn btn-secondary" onclick="resetSettings()">Varsayılana Dön</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Ayarları Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tab-btn {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover {
+    background: var(--color-bg-page);
+    color: var(--color-text-primary);
+  }
+
+  .tab-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .tab-panel {
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .modal-content {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+</style>
+
+<!-- Enerji Tarifesi Modal (Create/Edit) -->
+<div id="energyTariffModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="energyModalTitle">⚡ Yeni Enerji Tarifesi</h3>
+      <button class="modal-close" onclick="closeEnergyTariffModal()">&times;</button>
+    </div>
+    <form id="energyTariffForm">
+      <input type="hidden" id="energy-id">
+      <div class="form-group">
+        <label class="form-label">Tarife Adı</label>
+        <input type="text" class="form-input" id="energy-name" placeholder="Örn: Sanayi Tarifesi 2026" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Abone Tipi</label>
+        <select class="form-input" id="energy-type" required>
+          <option value="industrial">Sanayi (Industrial)</option>
+          <option value="commercial">Ticari (Commercial)</option>
+          <option value="residential">Konut (Residential)</option>
+          <option value="public">Kamu (Public)</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="form-group">
+          <label class="form-label">T1 Gündüz (TL/kWh)</label>
+          <input type="number" class="form-input" id="energy-t1" value="3.45" step="0.01" required>
+          <small class="form-help">06:00-17:00</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">T2 Puant (TL/kWh)</label>
+          <input type="number" class="form-input" id="energy-t2" value="4.20" step="0.01" required>
+          <small class="form-help">17:00-22:00</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">T3 Gece (TL/kWh)</label>
+          <input type="number" class="form-input" id="energy-t3" value="2.85" step="0.01" required>
+          <small class="form-help">22:00-06:00</small>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">Reaktif Ceza (TL/kVArh)</label>
+          <input type="number" class="form-input" id="energy-reactive" value="0.89" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dağıtım Bedeli (TL/kWh)</label>
+          <input type="number" class="form-input" id="energy-distribution" value="0.35" step="0.01" required>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">Geçerlilik Başlangıç</label>
+          <input type="date" class="form-input" id="energy-valid-from" value="2026-01-01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Geçerlilik Bitiş</label>
+          <input type="date" class="form-input" id="energy-valid-to">
+          <small class="form-help">Boş bırakılırsa süresiz</small>
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="energy-active" checked>
+          <span>Tarife Aktif</span>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeEnergyTariffModal()">İptal</button>
+        <button type="submit" class="btn btn-primary">💾 Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- OSB Dağıtım Tarifesi Modal -->
+<div id="distributionModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">🔌 Yeni OSB Dağıtım Tarifesi</h3>
+      <button class="modal-close" onclick="closeDistributionModal()">&times;</button>
+    </div>
+    <form id="distributionForm">
+      <div class="form-group">
+        <label class="form-label">Dönem Yılı</label>
+        <input type="number" class="form-input" id="dist-year" value="2026" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tarife Tipi</label>
+        <select class="form-input" id="dist-tariff-type" required>
+          <option value="dual_term">Çift Terimli (Güç + Enerji)</option>
+          <option value="tek_terim">Tek Terimli</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">OG Dağıtım Bedeli (kr/kWh)</label>
+        <input type="number" class="form-input" id="dist-og-rate" value="25.00" step="0.01" required>
+        <small class="form-help">EDAŞ tavanını aşmamalıdır</small>
+      </div>
+      <div class="form-group">
+        <label class="form-label">AG Dağıtım Bedeli (kr/kWh)</label>
+        <input type="number" class="form-input" id="dist-ag-rate" value="30.00" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Güç Bedeli (TL/kW)</label>
+        <input type="number" class="form-input" id="dist-capacity-rate" value="4200.00" step="0.01">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeDistributionModal()">İptal</button>
+        <button type="submit" class="btn btn-primary">💾 Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EDAŞ Tarifesi Modal -->
+<div id="edasModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">📊 Yeni EDAŞ Tavan Tarifesi</h3>
+      <button class="modal-close" onclick="closeEdasModal()">&times;</button>
+    </div>
+    <form id="edasForm">
+      <div class="form-group">
+        <label class="form-label">EDAŞ Bölgesi</label>
+        <input type="text" class="form-input" id="edas-name" value="Uludağ EDAŞ" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dönem Yılı</label>
+        <input type="number" class="form-input" id="edas-year" value="2026" required>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">OG Tek Terim (kr/kWh)</label>
+          <input type="number" class="form-input" id="edas-og" value="32.50" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">AG Tek Terim (kr/kWh)</label>
+          <input type="number" class="form-input" id="edas-ag" value="38.75" step="0.01" required>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">Çift Terim Güç (TL/kW)</label>
+          <input type="number" class="form-input" id="edas-capacity" value="4500" step="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Çift Terim Enerji (kr/kWh)</label>
+          <input type="number" class="form-input" id="edas-energy" value="18.50" step="0.01">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeEdasModal()">İptal</button>
+        <button type="submit" class="btn btn-primary">💾 Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ==================== DATA ====================
+  var energyTariffs = {{ tariffs | tojson | safe if tariffs else '[]' }};
+  var osbTariffs = {{ osb_tariffs | tojson | safe if osb_tariffs else '[]' }};
+  var edasTariffs = {{ edas_tariffs | tojson | safe if edas_tariffs else '[]' }};
+  var billingSettings = {{ settings | tojson | safe if settings else '{}' }};
+
+  // ==================== TAB NAVIGATION ====================
+  function showTab( tabName ) {
+    // Hide all panels
+    document.querySelectorAll( '.tab-panel' ).forEach( p => p.style.display = 'none' );
+    document.querySelectorAll( '.tab-btn' ).forEach( b => b.classList.remove( 'active' ) );
+    // Show selected
+    document.getElementById( 'panel-' + tabName ).style.display = 'block';
+    document.getElementById( 'tab-' + tabName ).classList.add( 'active' );
+
+    // Resize charts when switching tabs
+    setTimeout( () => {
+      if ( tabName === 'energy' && compChart ) compChart.resize();
+    }, 100 );
+  }
+
+  // ==================== KPI UPDATES ====================
+  function updateEnergyKPIs() {
+    var avgT1 = energyTariffs.length > 0 ? ( energyTariffs.reduce( ( sum, t ) => sum + ( t.t1_unit_price || 0 ), 0 ) / energyTariffs.length ) : 0;
+    var avgT2 = energyTariffs.length > 0 ? ( energyTariffs.reduce( ( sum, t ) => sum + ( t.t2_unit_price || 0 ), 0 ) / energyTariffs.length ) : 0;
+    var avgT3 = energyTariffs.length > 0 ? ( energyTariffs.reduce( ( sum, t ) => sum + ( t.t3_unit_price || 0 ), 0 ) / energyTariffs.length ) : 0;
+
+    document.getElementById( 'kpi-tariff-count' ).textContent = energyTariffs.length;
+    document.getElementById( 'kpi-t1' ).textContent = '₺' + avgT1.toFixed( 2 );
+    document.getElementById( 'kpi-t2' ).textContent = '₺' + avgT2.toFixed( 2 );
+    document.getElementById( 'kpi-t3' ).textContent = '₺' + avgT3.toFixed( 2 );
+  }
+  updateEnergyKPIs();
+
+  // ==================== GRID 1: ENERGY TARIFFS ====================
+  var energyGridOptions = {
+    columnDefs: [
+      { headerName: 'Tarife Adı', field: 'name', flex: 1, cellStyle: { fontWeight: '600' } },
+      { headerName: 'Abone Tipi', field: 'subscriber_type', width: 130 },
+      { headerName: 'T1 Gündüz', field: 't1_unit_price', width: 100, valueFormatter: p => '₺' + ( p.value || 0 ).toFixed( 2 ), cellStyle: { color: '#EF4444' } },
+      { headerName: 'T2 Puant', field: 't2_unit_price', width: 100, valueFormatter: p => '₺' + ( p.value || 0 ).toFixed( 2 ), cellStyle: { color: '#F59E0B' } },
+      { headerName: 'T3 Gece', field: 't3_unit_price', width: 100, valueFormatter: p => '₺' + ( p.value || 0 ).toFixed( 2 ), cellStyle: { color: '#10B981' } },
+      {
+        headerName: 'Durum', field: 'is_active', width: 90,
+        cellRenderer: p => '<span class="badge ' + ( p.value ? 'badge-success' : 'badge-secondary' ) + '">' + ( p.value ? 'Aktif' : 'Pasif' ) + '</span>'
+      },
+      {
+        headerName: 'İşlem', width: 130, sortable: false,
+        cellRenderer: p => {
+          return '<div style="display: flex; gap: 4px;">' +
+            '<button class="btn btn-secondary btn-sm" onclick="editEnergyTariff(' + p.data.id + ')" title="Düzenle">✏️</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="deleteEnergyTariff(' + p.data.id + ')" title="Sil">🗑️</button>' +
+            '</div>';
+        }
+      }
+    ],
+    rowData: energyTariffs,
+    defaultColDef: { sortable: true, resizable: true },
+    localeText: AG_GRID_LOCALE_TR,
+    rowHeight: 42
+  };
+  agGrid.createGrid( document.getElementById( 'energyTariffGrid' ), energyGridOptions );
+
+  // ==================== GRID 2: OSB DISTRIBUTION TARIFFS ====================
+  var distGridOptions = {
+    columnDefs: [
+      { headerName: 'Dönem', field: 'period_year', width: 100, cellStyle: { fontWeight: '600' } },
+      { headerName: 'OG Dağıtım (kr/kWh)', field: 'og_rate', flex: 1, valueFormatter: p => ( p.value || 0 ).toFixed( 2 ) + ' kr', cellStyle: { color: '#3B82F6' } },
+      { headerName: 'AG Dağıtım (kr/kWh)', field: 'ag_rate', flex: 1, valueFormatter: p => ( p.value || 0 ).toFixed( 2 ) + ' kr', cellStyle: { color: '#8B5CF6' } },
+      { headerName: 'Güç Bedeli (TL/kW)', field: 'capacity_rate', flex: 1, valueFormatter: p => '₺' + ( p.value || 0 ).toFixed( 2 ) },
+      {
+        headerName: 'EDAŞ Tavan Kontrolü', field: 'og_rate', flex: 1,
+        cellRenderer: function ( p ) {
+          var edasOg = edasTariffs.length > 0 ? edasTariffs[0].single_term_og_rate : 32.50;
+          var osbOg = p.value || 0;
+          if ( osbOg > edasOg ) {
+            return '<span class="badge badge-danger">⚠️ Tavan Aşıldı!</span>';
+          }
+          return '<span class="badge badge-success">✓ Tavan Altı</span>';
+        }
+      },
+      {
+        headerName: 'Durum', field: 'is_active', width: 90,
+        cellRenderer: p => '<span class="badge ' + ( p.value ? 'badge-success' : 'badge-secondary' ) + '">' + ( p.value ? 'Aktif' : 'Pasif' ) + '</span>'
+      }
+    ],
+    rowData: osbTariffs,
+    defaultColDef: { sortable: true, resizable: true },
+    localeText: AG_GRID_LOCALE_TR,
+    rowHeight: 42
+  };
+  agGrid.createGrid( document.getElementById( 'distributionGrid' ), distGridOptions );
+
+  // ==================== GRID 3: EDAS CEILING TARIFFS ====================
+  var edasGridOptions = {
+    columnDefs: [
+      { headerName: 'EDAŞ Bölgesi', field: 'edas_name', flex: 1, cellStyle: { fontWeight: '600' } },
+      { headerName: 'OG Tek Terim', field: 'single_term_og_rate', width: 130, valueFormatter: p => ( p.value || 0 ).toFixed( 2 ) + ' kr/kWh' },
+      { headerName: 'AG Tek Terim', field: 'single_term_ag_rate', width: 130, valueFormatter: p => ( p.value || 0 ).toFixed( 2 ) + ' kr/kWh' },
+      { headerName: 'Çift Terim Güç', field: 'dual_term_capacity_rate', width: 130, valueFormatter: p => '₺' + ( p.value || 0 ).toFixed( 0 ) + '/kW' },
+      { headerName: 'Çift Terim Enerji', field: 'dual_term_energy_rate', width: 130, valueFormatter: p => ( p.value || 0 ).toFixed( 2 ) + ' kr/kWh' },
+      { headerName: 'Geçerlilik', field: 'valid_from', width: 120, valueFormatter: p => p.value ? new Date( p.value ).toLocaleDateString( 'tr-TR' ) : '2026-01-01' }
+    ],
+    rowData: edasTariffs,
+    defaultColDef: { sortable: true, resizable: true },
+    localeText: AG_GRID_LOCALE_TR,
+    rowHeight: 42
+  };
+  agGrid.createGrid( document.getElementById( 'edasGrid' ), edasGridOptions );
+
+  // ==================== COMPARISON CHART ====================
+  var compChart = echarts.init( document.getElementById( 'comparisonChart' ) );
+  compChart.setOption( {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { bottom: 0, textStyle: { fontSize: 10 } },
+    xAxis: { type: 'category', data: energyTariffs.map( t => t.name ? t.name.replace( ' Tarifesi 2026', '' ).substring( 0, 8 ) : 'N/A' ), axisLabel: { fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { formatter: '₺{value}' } },
+    series: [
+      { name: 'T1', type: 'bar', data: energyTariffs.map( t => t.t1_unit_price ), itemStyle: { color: '#EF4444' } },
+      { name: 'T2', type: 'bar', data: energyTariffs.map( t => t.t2_unit_price ), itemStyle: { color: '#F59E0B' } },
+      { name: 'T3', type: 'bar', data: energyTariffs.map( t => t.t3_unit_price ), itemStyle: { color: '#10B981' } }
+    ],
+    grid: { left: '3%', right: '4%', bottom: '20%', top: '10%', containLabel: true }
+  } );
+
+  // ==================== MODAL & CRUD FUNCTIONS ====================
+
+  // OSB Distribution Modal
+  function openDistributionModal() {
+    document.getElementById( 'distributionModal' ).style.display = 'flex';
+  }
+  function closeDistributionModal() {
+    document.getElementById( 'distributionModal' ).style.display = 'none';
+  }
+  document.getElementById( 'distributionForm' ).addEventListener( 'submit', function ( e ) {
+    e.preventDefault();
+
+    var payload = {
+      period_year: parseInt( document.getElementById( 'dist-year' ).value ),
+      tariff_type: document.getElementById( 'dist-tariff-type' ).value,
+      og_rate: parseFloat( document.getElementById( 'dist-og-rate' ).value ),
+      ag_rate: parseFloat( document.getElementById( 'dist-ag-rate' ).value ),
+      capacity_rate: parseFloat( document.getElementById( 'dist-capacity-rate' ).value ) || 0
+    };
+
+    fetch( '/billing/api/osb-distribution-tariffs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify( payload )
+    } )
+      .then( function ( response ) { return response.json(); } )
+      .then( function ( data ) {
+        if ( data.success ) {
+          alert( '✓ OSB dağıtım tarifesi başarıyla eklendi!' );
+          closeDistributionModal();
+          location.reload();
+        } else {
+          alert( 'Hata: ' + ( data.error || 'Tarife eklenemedi' ) );
+        }
+      } )
+      .catch( function ( err ) {
+        console.error( 'API Error:', err );
+        alert( 'API hatası: ' + err.message );
+      } );
+  } );
+
+  // EDAŞ Modal  
+  function openEdasModal() {
+    document.getElementById( 'edasModal' ).style.display = 'flex';
+  }
+  function closeEdasModal() {
+    document.getElementById( 'edasModal' ).style.display = 'none';
+  }
+  document.getElementById( 'edasForm' ).addEventListener( 'submit', function ( e ) {
+    e.preventDefault();
+
+    var payload = {
+      edas_name: document.getElementById( 'edas-name' ).value,
+      period_year: parseInt( document.getElementById( 'edas-year' ).value ),
+      single_term_og_rate: parseFloat( document.getElementById( 'edas-og' ).value ),
+      single_term_ag_rate: parseFloat( document.getElementById( 'edas-ag' ).value ),
+      dual_term_capacity_rate: parseFloat( document.getElementById( 'edas-capacity' ).value ) || 0,
+      dual_term_energy_rate: parseFloat( document.getElementById( 'edas-energy' ).value ) || 0
+    };
+
+    fetch( '/billing/api/edas-tariffs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify( payload )
+    } )
+      .then( function ( response ) { return response.json(); } )
+      .then( function ( data ) {
+        if ( data.success ) {
+          alert( '✓ EDAŞ tarifesi başarıyla eklendi!' );
+          closeEdasModal();
+          location.reload();
+        } else {
+          alert( 'Hata: ' + ( data.error || 'Tarife eklenemedi' ) );
+        }
+      } )
+      .catch( function ( err ) {
+        console.error( 'API Error:', err );
+        alert( 'API hatası: ' + err.message );
+      } );
+  } );
+
+  // ==================== ENERGY TARIFF MODAL FUNCTIONS ====================
+  var currentEditingTariffId = null;
+
+  function openEnergyTariffModal( tariffId ) {
+    currentEditingTariffId = tariffId || null;
+
+    if ( tariffId ) {
+      // Edit mode
+      var tariff = energyTariffs.find( function ( t ) { return t.id === tariffId; } );
+      if ( !tariff ) {
+        alert( 'Tarife bulunamadı!' );
+        return;
+      }
+      document.getElementById( 'energyModalTitle' ).textContent = '✏️ Tarife Düzenle';
+      document.getElementById( 'energy-id' ).value = tariff.id;
+      document.getElementById( 'energy-name' ).value = tariff.name || '';
+      document.getElementById( 'energy-type' ).value = tariff.subscriber_type || 'industrial';
+      document.getElementById( 'energy-t1' ).value = tariff.t1_unit_price || 0;
+      document.getElementById( 'energy-t2' ).value = tariff.t2_unit_price || 0;
+      document.getElementById( 'energy-t3' ).value = tariff.t3_unit_price || 0;
+      document.getElementById( 'energy-reactive' ).value = tariff.reactive_unit_price || 0.89;
+      document.getElementById( 'energy-distribution' ).value = tariff.distribution_fee || 0;
+      document.getElementById( 'energy-valid-from' ).value = tariff.valid_from ? tariff.valid_from.split( 'T' )[0] : '2026-01-01';
+      document.getElementById( 'energy-valid-to' ).value = tariff.valid_to ? tariff.valid_to.split( 'T' )[0] : '';
+      document.getElementById( 'energy-active' ).checked = tariff.is_active !== false;
+    } else {
+      // Create mode
+      document.getElementById( 'energyModalTitle' ).textContent = '⚡ Yeni Enerji Tarifesi';
+      document.getElementById( 'energyTariffForm' ).reset();
+      document.getElementById( 'energy-id' ).value = '';
+      document.getElementById( 'energy-valid-from' ).value = '2026-01-01';
+      document.getElementById( 'energy-active' ).checked = true;
+    }
+
+    document.getElementById( 'energyTariffModal' ).style.display = 'flex';
+  }
+
+  function closeEnergyTariffModal() {
+    document.getElementById( 'energyTariffModal' ).style.display = 'none';
+    currentEditingTariffId = null;
+  }
+
+  document.getElementById( 'energyTariffForm' ).addEventListener( 'submit', function ( e ) {
+    e.preventDefault();
+
+    var payload = {
+      name: document.getElementById( 'energy-name' ).value,
+      tariff_type: document.getElementById( 'energy-type' ).value,
+      t1_rate: parseFloat( document.getElementById( 'energy-t1' ).value ),
+      t2_rate: parseFloat( document.getElementById( 'energy-t2' ).value ),
+      t3_rate: parseFloat( document.getElementById( 'energy-t3' ).value ),
+      reactive_rate: parseFloat( document.getElementById( 'energy-reactive' ).value ),
+      distribution_fee: parseFloat( document.getElementById( 'energy-distribution' ).value ),
+      valid_from: document.getElementById( 'energy-valid-from' ).value,
+      valid_to: document.getElementById( 'energy-valid-to' ).value || null,
+      is_active: document.getElementById( 'energy-active' ).checked
+    };
+
+    var url = currentEditingTariffId
+      ? '/billing/api/tariffs/' + currentEditingTariffId
+      : '/billing/api/tariffs';
+    var method = currentEditingTariffId ? 'PUT' : 'POST';
+
+    fetch( url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify( payload )
+    } )
+      .then( function ( response ) { return response.json(); } )
+      .then( function ( data ) {
+        if ( data.success ) {
+          alert( currentEditingTariffId ? '✓ Tarife başarıyla güncellendi!' : '✓ Tarife başarıyla eklendi!' );
+          closeEnergyTariffModal();
+          location.reload();
+        } else {
+          alert( 'Hata: ' + ( data.error || 'Tarife kaydedilemedi' ) );
+        }
+      } )
+      .catch( function ( err ) {
+        console.error( 'API Error:', err );
+        alert( 'API hatası: ' + err.message );
+      } );
+  } );
+
+  function editEnergyTariff( id ) {
+    openEnergyTariffModal( id );
+  }
+
+  function deleteEnergyTariff( id ) {
+    var tariff = energyTariffs.find( function ( t ) { return t.id === id; } );
+    if ( !confirm( 'Bu tarifeyi silmek istediğinize emin misiniz?\n\nTarife: ' + ( tariff ? tariff.name : 'N/A' ) ) ) {
+      return;
+    }
+
+    fetch( '/billing/api/tariffs/' + id, { method: 'DELETE' } )
+      .then( function ( response ) { return response.json(); } )
+      .then( function ( data ) {
+        if ( data.success ) {
+          alert( '✓ Tarife başarıyla silindi!' );
+          location.reload();
+        } else {
+          alert( 'Hata: ' + ( data.error || 'Tarife silinemedi' ) );
+        }
+      } )
+      .catch( function ( err ) {
+        console.error( 'API Error:', err );
+        alert( 'API hatası: ' + err.message );
+      } );
+  }
+
+  // Close modals on overlay click
+  document.querySelectorAll( '.modal-overlay' ).forEach( function ( modal ) {
+    modal.addEventListener( 'click', function ( e ) {
+      if ( e.target === modal ) {
+        modal.style.display = 'none';
+      }
+    } );
+  } );
+
+  // ==================== SETTINGS FUNCTIONS ====================
+  function saveSettings() {
+    var settings = {
+      kdv_rate: parseFloat( document.getElementById( 'setting-kdv' ).value ) / 100,
+      btv_rate: parseFloat( document.getElementById( 'setting-btv' ).value ) / 100,
+      transmission_fee_rate: parseFloat( document.getElementById( 'setting-transmission' ).value ),
+      energy_unit_cost: parseFloat( document.getElementById( 'setting-energy-cost' ).value ),
+      reactive_penalty_rate: parseFloat( document.getElementById( 'setting-reactive' ).value ),
+      inductive_limit: parseFloat( document.getElementById( 'setting-inductive' ).value ) / 100,
+      capacitive_limit: parseFloat( document.getElementById( 'setting-capacitive' ).value ) / 100,
+      loss_percentage: parseFloat( document.getElementById( 'setting-loss' ).value )
+    };
+
+    console.log( 'Kaydedilecek ayarlar:', settings );
+
+    fetch( '/billing/api/billing-settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify( settings )
+    } )
+      .then( response => response.json() )
+      .then( data => {
+        if ( data.success ) {
+          alert( '✓ Faturalama ayarları başarıyla kaydedildi!' );
+        } else {
+          alert( 'Hata: ' + ( data.error || 'Ayarlar kaydedilemedi' ) );
+        }
+      } )
+      .catch( err => {
+        console.error( 'API Error:', err );
+        alert( 'API hatası: ' + err.message );
+      } );
+  }
+
+  function resetSettings() {
+    if ( !confirm( 'Ayarları varsayılan değerlere döndürmek istediğinize emin misiniz?' ) ) return;
+
+    document.getElementById( 'setting-kdv' ).value = 20;
+    document.getElementById( 'setting-btv' ).value = 5;
+    document.getElementById( 'setting-transmission' ).value = 0.035;
+    document.getElementById( 'setting-energy-cost' ).value = 2.85;
+    document.getElementById( 'setting-reactive' ).value = 0.89;
+    document.getElementById( 'setting-inductive' ).value = 20;
+    document.getElementById( 'setting-capacitive' ).value = 15;
+    document.getElementById( 'setting-loss' ).value = 2.5;
+  }
+
+  // ==================== RESIZE HANDLER ====================
+  window.addEventListener( 'resize', () => {
+    if ( compChart ) compChart.resize();
+  } );
+</script>
+{% endblock %}

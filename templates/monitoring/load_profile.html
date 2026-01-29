@@ -1,0 +1,217 @@
+{% extends 'base.html' %} {% block title %}Yük Profili{% endblock %} {% block
+page_title %}Yük Profili{% endblock %} {% set breadcrumb = [{'name': 'Veri
+İzleme'}, {'name': 'Yük Profili'}] %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Max Demant (kW)</h3>
+    </div>
+    <div class="card-body" style="padding: 12px;">
+      <div id="gaugeMax" style="height: 160px"></div>
+      <div id="gaugeMaxValue" style="text-align:center;font-weight:600;color:var(--color-text-primary);margin-top:6px;">
+        0 kW</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Ort. Demant (kW)</h3>
+    </div>
+    <div class="card-body" style="padding: 12px;">
+      <div id="gaugeAvg" style="height: 160px"></div>
+      <div id="gaugeAvgValue" style="text-align:center;font-weight:600;color:var(--color-text-primary);margin-top:6px;">
+        0 kW</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Yük Faktörü</h3>
+    </div>
+    <div class="card-body" style="padding: 12px;">
+      <div id="gaugeLoad" style="height: 160px"></div>
+      <div id="gaugeLoadValue"
+        style="text-align:center;font-weight:600;color:var(--color-text-primary);margin-top:6px;">0%</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" id="kpiPeakHour" style="color: var(--color-warning)">-</div>
+    <div class="kpi-card-label">Pik Saati</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">Saatlik Yük Profili</h3>
+  </div>
+  <div class="card-body">
+    <div id="loadChart" style="height: 400px"></div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">T1/T2/T3 Dağılımı</h3>
+    </div>
+    <div class="card-body">
+      <div id="periodChart" style="height: 280px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Pik Saatler</h3>
+    </div>
+    <div class="card-body">
+      <div id="peakTable" style="max-height: 280px; overflow: auto;"></div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<!-- Jinja variables to JS -->
+<script>
+  var loadProfileData = {{ profile | tojson | safe if profile else '[]' }};
+  var demandStats = {{ demand_stats | tojson | safe if demand_stats else '{}' }};
+</script>
+
+<script>
+  function toHourLabel( value ) {
+    return String( value ).padStart( 2, "0" ) + ":00";
+  }
+
+  // Process backend data
+  var hours = loadProfileData.map( ( d ) => toHourLabel( d.hour ) );
+  var consumption = loadProfileData.map( ( d ) => d.consumption );
+
+  // If no data, fallback to empty array (chart will be empty but won't error)
+  if ( hours.length === 0 ) {
+    hours = Array.from(
+      { length: 24 },
+      ( _, i ) => String( i ).padStart( 2, "0" ) + ":00",
+    );
+    consumption = new Array( 24 ).fill( 0 );
+  }
+
+  var loadChart = echarts.init( document.getElementById( "loadChart" ) );
+  loadChart.setOption( {
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: hours },
+    yAxis: { type: "value", name: "Tüketim (kWh)" },
+    series: [
+      {
+        type: "line",
+        data: consumption,
+        smooth: true,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient( 0, 0, 0, 1, [
+            { offset: 0, color: "rgba(37,99,235,0.4)" },
+            { offset: 1, color: "rgba(37,99,235,0.05)" },
+          ] ),
+        },
+        lineStyle: { color: "#2563EB", width: 3 },
+        itemStyle: { color: "#2563EB" },
+        name: "Toplam Tüketim",
+      },
+    ],
+    grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
+  } );
+
+  function getPeriod( hour ) {
+    if ( hour >= 6 && hour < 17 ) return "T1";
+    if ( hour >= 17 && hour < 22 ) return "T2";
+    return "T3";
+  }
+
+  var periodTotals = { T1: 0, T2: 0, T3: 0 };
+  loadProfileData.forEach( ( d ) => {
+    var period = getPeriod( d.hour );
+    periodTotals[period] += Number( d.consumption || 0 );
+  } );
+
+  var periodChart = echarts.init( document.getElementById( "periodChart" ) );
+  periodChart.setOption( {
+    tooltip: { trigger: "item" },
+    series: [
+      {
+        type: "pie",
+        radius: ["40%", "70%"],
+        data: [
+          { value: periodTotals.T1, name: "T1 (Gündüz)", itemStyle: { color: "#EF4444" } },
+          { value: periodTotals.T2, name: "T2 (Puant)", itemStyle: { color: "#F59E0B" } },
+          { value: periodTotals.T3, name: "T3 (Gece)", itemStyle: { color: "#10B981" } },
+        ],
+      },
+    ],
+  } );
+
+  var peakSorted = loadProfileData
+    .slice()
+    .sort( ( a, b ) => ( b.consumption || 0 ) - ( a.consumption || 0 ) )
+    .slice( 0, 5 );
+
+  var peakTable = document.getElementById( "peakTable" );
+  peakTable.innerHTML = peakSorted.length
+    ? '<table class="table"><thead><tr><th>Saat</th><th>Tüketim (kWh)</th><th>Demant (kW)</th></tr></thead><tbody>' +
+    peakSorted.map( ( r ) =>
+      '<tr><td>' + toHourLabel( r.hour ) + '</td><td>' +
+      Number( r.consumption || 0 ).toLocaleString( "tr-TR" ) +
+      '</td><td>' + Number( r.max_demand || 0 ).toLocaleString( "tr-TR" ) +
+      '</td></tr>'
+    ).join( '' ) +
+    '</tbody></table>'
+    : '<div style="color: var(--color-text-secondary); padding: 12px;">Veri bulunamadı.</div>';
+
+  var maxDemand = Number( demandStats.max_demand || 0 );
+  var avgDemand = Number( demandStats.avg_demand || 0 );
+  var loadFactor = maxDemand ? ( avgDemand / maxDemand ) * 100 : 0;
+
+  var peakHour = peakSorted.length ? toHourLabel( peakSorted[0].hour ) : "-";
+  document.getElementById( "kpiPeakHour" ).textContent = peakHour;
+
+  var gaugeMax = echarts.init( document.getElementById( "gaugeMax" ) );
+  var gaugeAvg = echarts.init( document.getElementById( "gaugeAvg" ) );
+  var gaugeLoad = echarts.init( document.getElementById( "gaugeLoad" ) );
+
+  var maxScale = Math.max( maxDemand, avgDemand, 1 ) * 1.2;
+
+  function gaugeOption( value, max, unit, color ) {
+    return {
+      series: [
+        {
+          type: "gauge",
+          startAngle: 180,
+          endAngle: 0,
+          center: ["50%", "70%"],
+          min: 0,
+          max: max,
+          splitNumber: 4,
+          progress: { show: true, roundCap: true, width: 10, itemStyle: { color: color } },
+          axisLine: { lineStyle: { width: 10, color: [[1, "#e5e7eb"]] } },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          pointer: { show: false },
+          detail: { show: false },
+          title: { show: false },
+          data: [{ value: Number( value || 0 ).toFixed( 1 ) }]
+        }
+      ]
+    };
+  }
+
+  gaugeMax.setOption( gaugeOption( maxDemand, maxScale, "kW", "#EF4444" ) );
+  gaugeAvg.setOption( gaugeOption( avgDemand, maxScale, "kW", "#2563EB" ) );
+  gaugeLoad.setOption( gaugeOption( loadFactor, 100, "%", "#10B981" ) );
+
+  document.getElementById( "gaugeMaxValue" ).textContent = maxDemand.toLocaleString( "tr-TR" ) + " kW";
+  document.getElementById( "gaugeAvgValue" ).textContent = avgDemand.toLocaleString( "tr-TR" ) + " kW";
+  document.getElementById( "gaugeLoadValue" ).textContent = loadFactor.toFixed( 1 ).replace( '.', ',' ) + "%";
+
+  window.addEventListener( "resize", () => {
+    loadChart.resize();
+    loadChart.resize();
+    periodChart.resize();
+    gaugeMax.resize();
+    gaugeAvg.resize();
+    gaugeLoad.resize();
+  } );
+</script>
+{% endblock %}

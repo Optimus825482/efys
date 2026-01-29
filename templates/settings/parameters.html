@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Sistem Parametreleri{% endblock %}
+{% block page_title %}Sistem Parametreleri{% endblock %}
+{% set breadcrumb = [{'name': 'Ayarlar', 'url': url_for('settings.index')}, {'name': 'Parametreler'}] %}
+
+{% block content %}
+<div class="grid grid-cols-2 gap-4">
+    <!-- Faturalama Parametreleri -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">💰 Faturalama Parametreleri</h3>
+        </div>
+        <div class="card-body">
+            <form id="billing-params-form">
+                <div class="form-group">
+                    <label class="form-label">KDV Oranı (%)</label>
+                    <input type="number" step="0.01" class="form-input" id="kdv-rate"
+                        value="{{ params.kdv_rate or 20 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ÖTV Oranı (%)</label>
+                    <input type="number" step="0.01" class="form-input" id="otv-rate"
+                        value="{{ params.otv_rate or 5 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gecikme Faizi (Günlük %)</label>
+                    <input type="number" step="0.001" class="form-input" id="delay-rate"
+                        value="{{ params.delay_rate or 0.04 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Varsayılan Vade (Gün)</label>
+                    <input type="number" class="form-input" id="due-days" value="{{ params.due_days or 15 }}" />
+                </div>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- EPDK Parametreleri -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">⚡ EPDK Parametreleri</h3>
+        </div>
+        <div class="card-body">
+            <form id="epdk-params-form">
+                <div class="form-group">
+                    <label class="form-label">Reaktif Güç Faktörü Sınırı (Cos φ)</label>
+                    <input type="number" step="0.01" class="form-input" id="pf-limit"
+                        value="{{ params.pf_limit or 0.90 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reaktif Ceza Çarpanı</label>
+                    <input type="number" step="0.01" class="form-input" id="reactive-multiplier"
+                        value="{{ params.reactive_multiplier or 1.0 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kayıp/Kaçak Oranı (%)</label>
+                    <input type="number" step="0.01" class="form-input" id="loss-rate"
+                        value="{{ params.loss_rate or 3.5 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sistem Kullanım Bedeli (TL/kWh)</label>
+                    <input type="number" step="0.0001" class="form-input" id="system-usage-rate"
+                        value="{{ params.system_usage_rate or 0.0234 }}" />
+                </div>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Okuma Parametreleri -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📊 Okuma Parametreleri</h3>
+        </div>
+        <div class="card-body">
+            <form id="reading-params-form">
+                <div class="form-group">
+                    <label class="form-label">Okuma Periyodu (dakika)</label>
+                    <input type="number" class="form-input" id="reading-interval"
+                        value="{{ params.reading_interval or 15 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Maksimum Okuma Denemesi</label>
+                    <input type="number" class="form-input" id="max-retries" value="{{ params.max_retries or 3 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bağlantı Timeout (saniye)</label>
+                    <input type="number" class="form-input" id="conn-timeout" value="{{ params.conn_timeout or 30 }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tüketim Sapma Uyarısı (%)</label>
+                    <input type="number" class="form-input" id="consumption-alert"
+                        value="{{ params.consumption_alert or 50 }}" />
+                </div>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Zaman Dilimleri (EPDK T1/T2/T3) -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🕐 Zaman Dilimleri (T1/T2/T3)</h3>
+        </div>
+        <div class="card-body">
+            <form id="time-params-form">
+                <div class="form-group">
+                    <label class="form-label">T1 (Gündüz) Başlangıç</label>
+                    <input type="time" class="form-input" id="t1-start" value="{{ params.t1_start or '06:00' }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">T2 (Puant) Başlangıç</label>
+                    <input type="time" class="form-input" id="t2-start" value="{{ params.t2_start or '17:00' }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">T3 (Gece) Başlangıç</label>
+                    <input type="time" class="form-input" id="t3-start" value="{{ params.t3_start or '22:00' }}" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hafta Sonu Tarifesi</label>
+                    <select class="form-select" id="weekend-tariff">
+                        <option value="t3" {{ 'selected' if params.weekend_tariff=='t3' else '' }}>T3 (Gece)</option>
+                        <option value="t1" {{ 'selected' if params.weekend_tariff=='t1' else '' }}>T1 (Gündüz)</option>
+                        <option value="normal" {{ 'selected' if params.weekend_tariff=='normal' else '' }}>Normal
+                            Program</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll( 'form' ).forEach( form => {
+        form.addEventListener( 'submit', async function ( e ) {
+            e.preventDefault();
+            alert( 'Parametreler kaydedildi (Demo)' );
+        } );
+    } );
+</script>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %} {% block title %}Zamanlanmış Görevler{% endblock %} {%
+block page_title %}Zamanlanmış Görevler{% endblock %} {% set breadcrumb =
+[{'name': 'Okuma İşlemleri', 'url': url_for('readings.index')}, {'name':
+'Zamanlanmış'}] %} {% block content %}
+<div class="flex justify-between items-center mb-4">
+  <div>
+    <h2
+      style="
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+      "
+    >
+      Zamanlanmış Okuma Görevleri
+    </h2>
+    <p style="color: var(--color-text-secondary); margin-top: 4px">
+      Otomatik okuma planlarını yönetin
+    </p>
+  </div>
+  <button class="btn btn-primary">Yeni Görev Ekle</button>
+</div>
+
+<div class="card">
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Görev Adı</th>
+          <th>Zamanlama</th>
+          <th>Sayaç Grubu</th>
+          <th>Son Çalışma</th>
+          <th>Sonraki</th>
+          <th>Durum</th>
+          <th style="text-align: center">İşlemler</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600; color: var(--color-text-primary)">
+            Günlük Gece Okuma
+          </td>
+          <td>Her gün 00:00</td>
+          <td>Tüm Sayaçlar (847)</td>
+          <td>29.01.2026 00:00</td>
+          <td>30.01.2026 00:00</td>
+          <td><span class="badge badge-success">Aktif</span></td>
+          <td style="text-align: center">
+            <button class="btn btn-secondary btn-sm">Düzenle</button>
+            <button class="btn btn-secondary btn-sm">Durdur</button>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--color-text-primary)">
+            Saatlik İzleme
+          </td>
+          <td>Her saat başı</td>
+          <td>Kritik Aboneler (23)</td>
+          <td>29.01.2026 06:00</td>
+          <td>29.01.2026 07:00</td>
+          <td><span class="badge badge-success">Aktif</span></td>
+          <td style="text-align: center">
+            <button class="btn btn-secondary btn-sm">Düzenle</button>
+            <button class="btn btn-secondary btn-sm">Durdur</button>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--color-text-primary)">
+            Haftalık Detaylı
+          </td>
+          <td>Pazartesi 08:00</td>
+          <td>Sanayi (523)</td>
+          <td>27.01.2026 08:00</td>
+          <td>03.02.2026 08:00</td>
+          <td><span class="badge badge-warning">Bekliyor</span></td>
+          <td style="text-align: center">
+            <button class="btn btn-secondary btn-sm">Düzenle</button>
+            <button class="btn btn-secondary btn-sm">Durdur</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

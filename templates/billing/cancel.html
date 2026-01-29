@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}Fatura İptali{% endblock %}
+{% block page_title %}Fatura İptali{% endblock %}
+{% set breadcrumb = [{'name': 'Faturalama', 'url': url_for('billing.index')}, {'name': 'Fatura İptali'}] %}
+
+{% block content %}
+<div class="alert alert-danger mb-4">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+    <div>
+        <strong>Uyarı:</strong> Fatura iptali geri alınamaz. İptal edilen faturalar için yeni fatura kesilmesi gerekir.
+    </div>
+</div>
+
+<div class="grid grid-cols-3 gap-4">
+    <!-- Sol Panel: İptal Formu -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Fatura İptal</h3>
+        </div>
+        <div class="card-body">
+            <form id="cancel-form">
+                <div class="form-group">
+                    <label class="form-label">Fatura No veya Abone Ara</label>
+                    <input type="text" class="form-input" id="search-input"
+                        placeholder="FTR-2026-XXXXX veya abone adı" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fatura Seç</label>
+                    <select class="form-select" id="invoice-select" required>
+                        <option value="">Listeden Seçin veya Tabloda Tıklayın</option>
+                        {% for inv in invoices %}
+                        <option value="{{ inv.id }}">{{ inv.invoice_no }} - {{ inv.subscriber_name }} (₺{{
+                            "{:,.0f}".format(inv.total_amount or 0) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">İptal Nedeni</label>
+                    <select class="form-select" id="cancel-reason" required>
+                        <option value="">Neden Seçin</option>
+                        <option value="hatali_endeks">Hatalı Endeks</option>
+                        <option value="yanlis_tarife">Yanlış Tarife</option>
+                        <option value="mukerrer_fatura">Mükerrer Fatura</option>
+                        <option value="abone_talebi">Abone Talebi</option>
+                        <option value="diger">Diğer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Açıklama</label>
+                    <textarea class="form-textarea" id="cancel-description" rows="3"
+                        placeholder="İptal gerekçesini yazın..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger" style="width: 100%">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                    </svg>
+                    Faturayı İptal Et
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sağ Panel: İptal Edilebilir Faturalar -->
+    <div class="card" style="grid-column: span 2">
+        <div class="card-header">
+            <h3 class="card-title">İptal Edilebilir Faturalar</h3>
+            <span style="color: var(--color-text-secondary); font-size: 0.9rem;">{{ invoices | length }} fatura</span>
+        </div>
+        <div class="card-body" style="padding: 0">
+            <table class="table" id="invoices-table">
+                <thead>
+                    <tr>
+                        <th>Fatura No</th>
+                        <th>Abone</th>
+                        <th>Tarih</th>
+                        <th style="text-align: right;">Tutar</th>
+                        <th>Durum</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                    <tr
+                        data-search="{{ inv.invoice_no|lower }} {{ inv.subscriber_name|lower }} {{ inv.subscriber_code|lower }}">
+                        <td><strong>{{ inv.invoice_no }}</strong></td>
+                        <td>{{ inv.subscriber_code }} - {{ inv.subscriber_name }}</td>
+                        <td>{{ inv.invoice_date.strftime('%d.%m.%Y') if inv.invoice_date else '-' }}</td>
+                        <td style="text-align: right;">₺{{ "{:,.2f}".format(inv.total_amount or 0) }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'warning' if inv.status == 'issued' else 'secondary' }}">
+                                {{ 'Kesildi' if inv.status == 'issued' else 'Taslak' }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger btn-sm"
+                                onclick="selectForCancel({{ inv.id }}, '{{ inv.invoice_no }}')">
+                                İptal Et
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 32px; color: var(--color-text-secondary);">
+                            İptal edilebilir fatura bulunmuyor
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Arama filtresi
+    document.getElementById( 'search-input' ).addEventListener( 'input', function () {
+        const search = this.value.toLowerCase();
+        document.querySelectorAll( '#invoices-table tbody tr' ).forEach( row => {
+            const text = row.dataset.search || '';
+            row.style.display = text.includes( search ) ? '' : 'none';
+        } );
+    } );
+
+    function selectForCancel( invoiceId, invoiceNo ) {
+        document.getElementById( 'invoice-select' ).value = invoiceId;
+        document.getElementById( 'cancel-reason' ).focus();
+    }
+
+    document.getElementById( 'cancel-form' ).addEventListener( 'submit', async function ( e ) {
+        e.preventDefault();
+
+        const invoiceId = document.getElementById( 'invoice-select' ).value;
+        const reason = document.getElementById( 'cancel-reason' ).value;
+        const description = document.getElementById( 'cancel-description' ).value;
+
+        if ( !invoiceId ) {
+            alert( 'Lütfen bir fatura seçin' );
+            return;
+        }
+
+        if ( !reason ) {
+            alert( 'Lütfen iptal nedeni seçin' );
+            return;
+        }
+
+        if ( !confirm( 'Bu fatura iptal edilecek. Onaylıyor musunuz?' ) ) return;
+
+        try {
+            const res = await fetch( `/billing/api/cancel/${invoiceId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify( { reason, description } )
+            } );
+
+            const data = await res.json();
+            if ( data.success ) {
+                alert( 'Fatura başarıyla iptal edildi' );
+                location.reload();
+            } else {
+                alert( 'Hata: ' + ( data.error || 'Bilinmeyen hata' ) );
+            }
+        } catch ( err ) {
+            alert( 'İptal hatası: ' + err.message );
+        }
+    } );
+</script>
+{% endblock %}

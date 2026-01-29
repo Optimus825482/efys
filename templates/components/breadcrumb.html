@@ -1,0 +1,15 @@
+<!-- Breadcrumb -->
+<nav class="breadcrumb mb-4">
+  <span class="breadcrumb-item"
+    ><a href="{{ url_for('dashboard.index') }}">Ana Sayfa</a></span
+  >
+  {% for item in breadcrumb %}
+  <span class="breadcrumb-separator">/</span>
+  {% if loop.last %}
+  <span class="breadcrumb-item active">{{ item.name }}</span>
+  {% else %}
+  <span class="breadcrumb-item"
+    ><a href="{{ item.url }}">{{ item.name }}</a></span
+  >
+  {% endif %} {% endfor %}
+</nav>

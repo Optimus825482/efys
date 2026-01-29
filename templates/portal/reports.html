@@ -1,0 +1,165 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Detaylı Raporlar{% endblock %}
+{% block page_title %}Detaylı Raporlar{% endblock %}
+
+{% block content %}
+<!-- Period Selector -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-4 shadow-sm mb-6">
+    <div class="flex flex-wrap items-center gap-4">
+        <span class="text-sm font-medium text-[#617789] dark:text-gray-400">Dönem:</span>
+        <div class="flex gap-2">
+            <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold">Bu Ay</button>
+            <button
+                class="px-4 py-2 bg-[#f0f2f4] dark:bg-[#2a3644] text-[#617789] dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">Geçen
+                Ay</button>
+            <button
+                class="px-4 py-2 bg-[#f0f2f4] dark:bg-[#2a3644] text-[#617789] dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">Son
+                3 Ay</button>
+            <button
+                class="px-4 py-2 bg-[#f0f2f4] dark:bg-[#2a3644] text-[#617789] dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">Özel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Consumption Summary -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- T1 Card -->
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600">
+                    <span class="material-symbols-outlined">wb_sunny</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-[#617789] dark:text-gray-400">T1 - Gündüz</p>
+                    <p class="text-xs text-[#617789] dark:text-gray-500">06:00 - 17:00</p>
+                </div>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-[#111518] dark:text-white mb-2">{{ "{:,.0f}".format(consumption.t1 or
+            0).replace(",", ".") }} <span class="text-lg text-gray-400 font-normal">kWh</span></p>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            {% set total = (consumption.t1 or 0) + (consumption.t2 or 0) + (consumption.t3 or 0) %}
+            {% set t1_pct = ((consumption.t1 or 0) / total * 100) if total > 0 else 0 %}
+            <div class="bg-amber-500 h-2 rounded-full" style="width: {{ t1_pct }}%"></div>
+        </div>
+        <p class="text-xs text-[#617789] dark:text-gray-500 mt-2">Toplam tüketimin %{{ "%.1f"|format(t1_pct) }}'i</p>
+    </div>
+
+    <!-- T2 Card -->
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600">
+                    <span class="material-symbols-outlined">bolt</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-[#617789] dark:text-gray-400">T2 - Puant</p>
+                    <p class="text-xs text-[#617789] dark:text-gray-500">17:00 - 22:00</p>
+                </div>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-[#111518] dark:text-white mb-2">{{ "{:,.0f}".format(consumption.t2 or
+            0).replace(",", ".") }} <span class="text-lg text-gray-400 font-normal">kWh</span></p>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            {% set t2_pct = ((consumption.t2 or 0) / total * 100) if total > 0 else 0 %}
+            <div class="bg-red-500 h-2 rounded-full" style="width: {{ t2_pct }}%"></div>
+        </div>
+        <p class="text-xs text-[#617789] dark:text-gray-500 mt-2">Toplam tüketimin %{{ "%.1f"|format(t2_pct) }}'i</p>
+    </div>
+
+    <!-- T3 Card -->
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600">
+                    <span class="material-symbols-outlined">nights_stay</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-[#617789] dark:text-gray-400">T3 - Gece</p>
+                    <p class="text-xs text-[#617789] dark:text-gray-500">22:00 - 06:00</p>
+                </div>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-[#111518] dark:text-white mb-2">{{ "{:,.0f}".format(consumption.t3 or
+            0).replace(",", ".") }} <span class="text-lg text-gray-400 font-normal">kWh</span></p>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            {% set t3_pct = ((consumption.t3 or 0) / total * 100) if total > 0 else 0 %}
+            <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ t3_pct }}%"></div>
+        </div>
+        <p class="text-xs text-[#617789] dark:text-gray-500 mt-2">Toplam tüketimin %{{ "%.1f"|format(t3_pct) }}'i</p>
+    </div>
+</div>
+
+<!-- Total Summary Card -->
+<div class="bg-gradient-to-r from-primary to-blue-600 rounded-xl p-6 shadow-lg mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-6">
+        <div>
+            <p class="text-blue-100 text-sm font-medium mb-1">Toplam Tüketim (Bu Ay)</p>
+            <p class="text-white text-4xl font-extrabold">{{ "{:,.0f}".format(consumption.total_kwh or 0).replace(",",
+                ".") }} <span class="text-2xl font-normal opacity-80">kWh</span></p>
+        </div>
+        <div class="text-right">
+            <p class="text-blue-100 text-sm font-medium mb-1">Tahmini Fatura</p>
+            <p class="text-white text-3xl font-bold">{{ "{:,.0f}".format(consumption.estimated_bill or 0).replace(",",
+                ".") }} ₺</p>
+        </div>
+        <div>
+            <button
+                class="px-6 py-3 bg-white text-primary font-semibold rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined">download</span>
+                Rapor İndir
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Consumption Chart -->
+<div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+    <h3 class="text-lg font-bold text-[#111518] dark:text-white mb-6">Günlük Tüketim Grafiği</h3>
+    <div id="dailyConsumptionChart" class="h-64"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    ( function () {
+        const isDark = document.documentElement.classList.contains( 'dark' );
+        const values = {{ ( daily_consumption if daily_consumption else[]) | tojson
+    }};
+    const days = values.length || 0;
+    const labels = [];
+    for ( let i = days - 1; i >= 0; i-- ) {
+        const d = new Date();
+        d.setDate( d.getDate() - i );
+        labels.push( d.toLocaleDateString( 'tr-TR', { day: '2-digit', month: '2-digit' } ) );
+    }
+
+    const chart = echarts.init( document.getElementById( 'dailyConsumptionChart' ) );
+    chart.setOption( {
+        grid: { left: 10, right: 10, top: 10, bottom: 30, containLabel: true },
+        xAxis: {
+            type: 'category',
+            data: labels,
+            axisLabel: { color: isDark ? '#9ca3af' : '#6b7280' },
+            axisLine: { lineStyle: { color: isDark ? '#374151' : '#e5e7eb' } }
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: { color: isDark ? '#9ca3af' : '#6b7280' },
+            splitLine: { lineStyle: { color: isDark ? '#1f2937' : '#f3f4f6' } }
+        },
+        tooltip: { trigger: 'axis' },
+        series: [{
+            type: 'bar',
+            data: values,
+            barWidth: '60%',
+            itemStyle: { color: '#1387ec', borderRadius: [6, 6, 0, 0] }
+        }]
+    } );
+
+    window.addEventListener( 'resize', () => chart.resize() );
+    }) ();
+</script>
+{% endblock %}

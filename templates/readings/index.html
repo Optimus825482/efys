@@ -1,0 +1,136 @@
+{% extends 'base.html' %} {% block title %}Okuma İşlemleri{% endblock %} {%
+block page_title %}Okuma İşlemleri{% endblock %} {% block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-icon primary">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">847</div>
+    <div class="kpi-card-label">Toplam Sayaç</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-icon success">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 4 12 14.01 9 11.01" />
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">%98.5</div>
+    <div class="kpi-card-label">Okuma Başarısı</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-icon warning">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">13</div>
+    <div class="kpi-card-label">Bekleyen Okuma</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-icon danger">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="15" y1="9" x2="9" y2="15" />
+        <line x1="9" y1="9" x2="15" y2="15" />
+      </svg>
+    </div>
+    <div class="kpi-card-value">5</div>
+    <div class="kpi-card-label">Başarısız</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+  <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+    Tek sayaç için anlık okuma yap
+  </div>
+</div>
+</div>
+</a>
+<a href="{{ url_for('readings.scheduled') }}" class="card" style="cursor: pointer">
+  <div class="card-body" style="display: flex; align-items: center; gap: 16px">
+    <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-success-bg);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-success);
+        ">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    </div>
+    <div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Zamanlanmış Görevler
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Otomatik okuma planları
+      </div>
+    </div>
+  </div>
+</a>
+<a href="{{ url_for('readings.bulk') }}" class="card" style="cursor: pointer">
+  <div class="card-body" style="display: flex; align-items: center; gap: 16px">
+    <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-warning-bg);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-warning);
+        ">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <line x1="3" y1="9" x2="21" y2="9" />
+        <line x1="9" y1="21" x2="9" y2="9" />
+      </svg>
+    </div>
+    <div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Toplu Okuma
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Grup halinde okuma başlat
+      </div>
+    </div>
+  </div>
+</a>
+<a href="{{ url_for('readings.history') }}" class="card" style="cursor: pointer">
+  <div class="card-body" style="display: flex; align-items: center; gap: 16px">
+    <div style="
+          width: 48px;
+          height: 48px;
+          background: var(--color-info-bg);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-info);
+        ">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="1 4 1 10 7 10" />
+        <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+      </svg>
+    </div>
+    <div>
+      <div style="font-weight: 600; color: var(--color-text-primary)">
+        Okuma Geçmişi
+      </div>
+      <div style="font-size: 0.875rem; color: var(--color-text-secondary)">
+        Geçmiş okumaları görüntüle
+      </div>
+    </div>
+  </div>
+</a>
+</div>
+{% endblock %}

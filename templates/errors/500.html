@@ -1,0 +1,15 @@
+{% extends 'base.html' %} {% block title %}500 - Sunucu Hatası{% endblock %} {%
+block page_title %}Sunucu Hatası{% endblock %} {% block content %}
+<div class="card" style="text-align: center; padding: 48px">
+  <div style="font-size: 6rem; color: var(--color-danger); margin-bottom: 16px">
+    500
+  </div>
+  <h2 style="margin-bottom: 8px">Bir hata oluştu</h2>
+  <p style="color: var(--color-text-secondary); margin-bottom: 24px">
+    Teknik ekibimiz bilgilendirildi.
+  </p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary"
+    >Dashboard'a Dön</a
+  >
+</div>
+{% endblock %}

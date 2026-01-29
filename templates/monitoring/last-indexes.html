@@ -1,0 +1,63 @@
+{% extends 'base.html' %} {% block title %}Son Endeksler{% endblock %} {% block
+page_title %}Son Endeksler{% endblock %} {% set breadcrumb = [{'name': 'Veri
+İzleme', 'url': url_for('monitoring.index')}, {'name': 'Son Endeksler'}] %} {%
+block content %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Tüm Sayaçların Son Endeksleri</h3>
+    <div style="display: flex; gap: 8px">
+      <input
+        type="text"
+        class="form-input"
+        placeholder="Ara..."
+        style="width: 200px"
+      />
+      <button class="btn btn-secondary btn-sm">Excel İndir</button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sayaç</th>
+          <th>Abone</th>
+          <th style="text-align: right">T1 (kWh)</th>
+          <th style="text-align: right">T2 (kWh)</th>
+          <th style="text-align: right">T3 (kWh)</th>
+          <th style="text-align: right">Endüktif</th>
+          <th>Son Okuma</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600">M-2847</td>
+          <td>ABC Tekstil A.Ş.</td>
+          <td style="text-align: right">127,450</td>
+          <td style="text-align: right">45,890</td>
+          <td style="text-align: right">32,560</td>
+          <td style="text-align: right">8,456</td>
+          <td>29.01.2026 06:45</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">M-3456</td>
+          <td>XYZ Otomotiv Ltd.</td>
+          <td style="text-align: right">89,234</td>
+          <td style="text-align: right">34,567</td>
+          <td style="text-align: right">21,890</td>
+          <td style="text-align: right">5,234</td>
+          <td>29.01.2026 06:44</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">M-1234</td>
+          <td>Merkez Mağaza</td>
+          <td style="text-align: right">45,678</td>
+          <td style="text-align: right">12,345</td>
+          <td style="text-align: right">8,901</td>
+          <td style="text-align: right">2,345</td>
+          <td>28.01.2026 23:45</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

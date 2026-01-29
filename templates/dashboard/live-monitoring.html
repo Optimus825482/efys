@@ -1,0 +1,431 @@
+{% extends 'base.html' %} {% block title %}Canlı İzleme{% endblock %} {% block
+page_title %}Canlı İzleme{% endblock %} {% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-icon primary">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="liveReadings">
+      {{ stats.total_meters if stats else 0 }}
+    </div>
+    <div class="kpi-card-label">Aktif Sayaç</div>
+    <div class="kpi-card-change positive">Canlı</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon success">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="totalPower">0</div>
+    <div class="kpi-card-label">Toplam Güç (kW)</div>
+    <div class="kpi-card-change" id="powerTrend">--</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon warning">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="totalEnergy">0</div>
+    <div class="kpi-card-label">Anlık Tüketim (kWh)</div>
+    <div class="kpi-card-change" id="energyTrend">--</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-icon info">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      </svg>
+    </div>
+    <div class="kpi-card-value" id="avgPowerFactor">0.000</div>
+    <div class="kpi-card-label">Ortalama Cos φ</div>
+    <div class="kpi-card-change" id="pfTrend">--</div>
+  </div>
+</div>
+
+<!-- Real-time Chart -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">Anlık Güç Grafiği (Son 60 Saniye)</h3>
+    <div style="display: flex; gap: 8px">
+      <button
+        class="btn btn-sm"
+        onclick="toggleAutoRefresh()"
+        id="autoRefreshBtn"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        Otomatik Yenileme: Açık
+      </button>
+      <select
+        class="form-select"
+        style="width: auto"
+        onchange="changeRefreshInterval(this.value)"
+      >
+        <option value="1000">1 saniye</option>
+        <option value="2000" selected>2 saniye</option>
+        <option value="5000">5 saniye</option>
+        <option value="10000">10 saniye</option>
+      </select>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="chart-container" style="height: 300px">
+      <canvas id="liveChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Live Readings Grid -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Anlık Okumalar</h3>
+    <div style="display: flex; gap: 8px">
+      <button class="btn btn-secondary btn-sm" onclick="exportData()">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Dışa Aktar
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="refreshData()">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+        </svg>
+        Yenile
+      </button>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div id="liveGrid" style="height: 500px; width: 100%"></div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Global variables
+  let autoRefresh = true;
+  let refreshInterval = 2000;
+  let refreshTimer = null;
+  let liveChart = null;
+  let chartData = {
+      labels: [],
+      datasets: [{
+          label: 'Toplam Güç (kW)',
+          data: [],
+          borderColor: '#2563EB',
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
+          tension: 0.4,
+          fill: true
+      }]
+  };
+
+  // AG-Grid Column Definitions
+  const columnDefs = [
+      {
+          headerName: 'Sayaç No',
+          field: 'meter_serial',
+          width: 150,
+          pinned: 'left',
+          cellStyle: { fontWeight: '500' }
+      },
+      {
+          headerName: 'Abone',
+          field: 'subscriber_name',
+          width: 200
+      },
+      {
+          headerName: 'Aktif Güç (kW)',
+          field: 'active_power',
+          width: 140,
+          valueFormatter: params => params.value ? params.value.toFixed(2) : '0.00',
+          cellStyle: params => ({
+              color: params.value > 100 ? '#EF4444' : '#10B981',
+              fontWeight: '600'
+          })
+      },
+      {
+          headerName: 'Reaktif Güç (kVAr)',
+          field: 'reactive_power',
+          width: 160,
+          valueFormatter: params => params.value ? params.value.toFixed(2) : '0.00'
+      },
+      {
+          headerName: 'Cos φ',
+          field: 'power_factor',
+          width: 100,
+          valueFormatter: params => params.value ? params.value.toFixed(3) : '0.000',
+          cellStyle: params => ({
+              color: params.value >= 0.9 ? '#10B981' : params.value >= 0.85 ? '#F59E0B' : '#EF4444',
+              fontWeight: '600'
+          })
+      },
+      {
+          headerName: 'Gerilim (V)',
+          field: 'voltage',
+          width: 120,
+          valueFormatter: params => params.value ? params.value.toFixed(1) : '0.0'
+      },
+      {
+          headerName: 'Akım (A)',
+          field: 'current',
+          width: 120,
+          valueFormatter: params => params.value ? params.value.toFixed(2) : '0.00'
+      },
+      {
+          headerName: 'Frekans (Hz)',
+          field: 'frequency',
+          width: 120,
+          valueFormatter: params => params.value ? params.value.toFixed(2) : '50.00'
+      },
+      {
+          headerName: 'Son Güncelleme',
+          field: 'timestamp',
+          width: 180,
+          valueFormatter: params => {
+              if (!params.value) return '';
+              return new Date(params.value).toLocaleString('tr-TR');
+          }
+      },
+      {
+          headerName: 'Durum',
+          field: 'status',
+          width: 100,
+          cellRenderer: params => {
+              const status = params.value || 'online';
+              const badges = {
+                  'online': '<span class="badge badge-success">Çevrimiçi</span>',
+                  'offline': '<span class="badge badge-danger">Çevrimdışı</span>',
+                  'warning': '<span class="badge badge-warning">Uyarı</span>'
+              };
+              return badges[status] || status;
+          }
+      }
+  ];
+
+  // Grid Options
+  const gridOptions = {
+      columnDefs: columnDefs,
+      rowData: {{ readings | tojson | safe }},
+      defaultColDef: {
+          sortable: true,
+          filter: true,
+          resizable: true
+      },
+      animateRows: true,
+      onGridReady: params => {
+          params.api.sizeColumnsToFit();
+      }
+  };
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+      // Initialize Grid
+      const gridDiv = document.querySelector('#liveGrid');
+      new agGrid.Grid(gridDiv, gridOptions);
+
+      // Initialize Chart
+      const ctx = document.getElementById('liveChart').getContext('2d');
+      liveChart = new Chart(ctx, {
+          type: 'line',
+          data: chartData,
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: { display: false }
+              },
+              scales: {
+                  x: { display: true },
+                  y: {
+                      beginAtZero: true,
+                      ticks: {
+                          callback: value => value.toFixed(0) + ' kW'
+                      }
+                  }
+              },
+              animation: { duration: 500 }
+          }
+      });
+
+      // Start auto-refresh
+      startAutoRefresh();
+  });
+
+  function refreshData() {
+      fetch('/readings/api/instant')
+          .then(res => res.json())
+          .then(data => {
+              if (data.success) {
+                  // Update grid
+                  gridOptions.api.setRowData(data.data);
+
+                  // Update stats
+                  updateStats(data.data);
+
+                  // Update chart
+                  updateChart(data.data);
+              }
+          })
+          .catch(err => {
+              console.error('Refresh error:', err);
+          });
+  }
+
+  function updateStats(readings) {
+      if (!readings || readings.length === 0) return;
+
+      const totalPower = readings.reduce((sum, r) => sum + (r.active_power || 0), 0);
+      const totalEnergy = readings.reduce((sum, r) => sum + (r.total_active_energy || 0), 0);
+      const avgPF = readings.reduce((sum, r) => sum + (r.power_factor || 0), 0) / readings.length;
+
+      document.getElementById('totalPower').textContent = totalPower.toFixed(2);
+      document.getElementById('totalEnergy').textContent = totalEnergy.toFixed(2);
+      document.getElementById('avgPowerFactor').textContent = avgPF.toFixed(3);
+      document.getElementById('liveReadings').textContent = readings.length;
+  }
+
+  function updateChart(readings) {
+      if (!readings || readings.length === 0) return;
+
+      const now = new Date().toLocaleTimeString('tr-TR');
+      const totalPower = readings.reduce((sum, r) => sum + (r.active_power || 0), 0);
+
+      // Add new data point
+      chartData.labels.push(now);
+      chartData.datasets[0].data.push(totalPower);
+
+      // Keep only last 60 points
+      if (chartData.labels.length > 60) {
+          chartData.labels.shift();
+          chartData.datasets[0].data.shift();
+      }
+
+      liveChart.update();
+  }
+
+  function toggleAutoRefresh() {
+      autoRefresh = !autoRefresh;
+      const btn = document.getElementById('autoRefreshBtn');
+      btn.textContent = `Otomatik Yenileme: ${autoRefresh ? 'Açık' : 'Kapalı'}`;
+
+      if (autoRefresh) {
+          startAutoRefresh();
+      } else {
+          stopAutoRefresh();
+      }
+  }
+
+  function changeRefreshInterval(value) {
+      refreshInterval = parseInt(value);
+      if (autoRefresh) {
+          stopAutoRefresh();
+          startAutoRefresh();
+      }
+  }
+
+  function startAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(refreshData, refreshInterval);
+  }
+
+  function stopAutoRefresh() {
+      if (refreshTimer) {
+          clearInterval(refreshTimer);
+          refreshTimer = null;
+      }
+  }
+
+  function exportData() {
+      const rows = [];
+      gridOptions.api.forEachNode(node => rows.push(node.data));
+
+      // Simple CSV export
+      const csv = [
+          ['Sayaç No', 'Abone', 'Aktif Güç', 'Reaktif Güç', 'Cos φ', 'Gerilim', 'Akım', 'Frekans', 'Zaman'].join(','),
+          ...rows.map(r => [
+              r.meter_serial,
+              r.subscriber_name,
+              r.active_power,
+              r.reactive_power,
+              r.power_factor,
+              r.voltage,
+              r.current,
+              r.frequency,
+              r.timestamp
+          ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `live_readings_${new Date().toISOString()}.csv`;
+      a.click();
+  }
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+      stopAutoRefresh();
+  });
+</script>
+{% endblock %}

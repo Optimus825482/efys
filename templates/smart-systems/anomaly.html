@@ -1,0 +1,60 @@
+{% extends 'base.html' %} {% block title %}Anomali Tespiti{% endblock %} {%
+block page_title %}Anomali Tespiti{% endblock %} {% set breadcrumb = [{'name':
+'Akıllı Sistemler', 'url': url_for('smart.index')}, {'name': 'Anomali'}] %} {%
+block content %}
+<div class="grid grid-cols-4 gap-4 mb-4">
+  <div class="kpi-card">
+    <div class="kpi-card-value">847</div>
+    <div class="kpi-card-label">Tarama</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-success)">812</div>
+    <div class="kpi-card-label">Normal</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-warning)">28</div>
+    <div class="kpi-card-label">Şüpheli</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card-value" style="color: var(--color-danger)">7</div>
+    <div class="kpi-card-label">Kritik</div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Tespit Edilen Anomaliler</h3>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sayaç</th>
+          <th>Tip</th>
+          <th>Açıklama</th>
+          <th>Skor</th>
+          <th>Durum</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600">M-2847</td>
+          <td>Spike</td>
+          <td>Ani %450 artış</td>
+          <td>0.95</td>
+          <td><span class="badge badge-danger">Kritik</span></td>
+          <td><button class="btn btn-secondary btn-sm">İncele</button></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600">M-1234</td>
+          <td>Zero</td>
+          <td>3 gün sıfır tüketim</td>
+          <td>0.87</td>
+          <td><span class="badge badge-warning">Şüpheli</span></td>
+          <td><button class="btn btn-secondary btn-sm">İncele</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

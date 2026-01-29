@@ -1,0 +1,206 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Enerji Kalitesi{% endblock %}
+{% block page_title %}Enerji Kalitesi{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-[#617789] dark:text-gray-400">Aktif Enerji</span>
+            <span class="material-symbols-outlined text-primary">electric_bolt</span>
+        </div>
+        <p class="text-2xl font-bold text-[#111518] dark:text-white">{{ "{:,.0f}".format(reactive.active_kwh or
+            0).replace(",", ".") }}</p>
+        <p class="text-xs text-[#617789] dark:text-gray-500 mt-1">kWh</p>
+    </div>
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-[#617789] dark:text-gray-400">Endüktif Reaktif</span>
+            <span class="material-symbols-outlined text-amber-500">trending_up</span>
+        </div>
+        <p class="text-2xl font-bold text-[#111518] dark:text-white">{{ "{:,.0f}".format(reactive.inductive_kvarh or
+            0).replace(",", ".") }}</p>
+        <p class="text-xs text-[#617789] dark:text-gray-500 mt-1">kVArh</p>
+    </div>
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-[#617789] dark:text-gray-400">Kapasitif Reaktif</span>
+            <span class="material-symbols-outlined text-blue-500">trending_down</span>
+        </div>
+        <p class="text-2xl font-bold text-[#111518] dark:text-white">{{ "{:,.0f}".format(reactive.capacitive_kvarh or
+            0).replace(",", ".") }}</p>
+        <p class="text-xs text-[#617789] dark:text-gray-500 mt-1">kVArh</p>
+    </div>
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-[#617789] dark:text-gray-400">Güç Faktörü</span>
+            <span class="material-symbols-outlined text-green-500">speed</span>
+        </div>
+        <p class="text-2xl font-bold text-[#111518] dark:text-white">{{ reactive.cos_phi or 1.0 }}</p>
+        <p class="text-xs text-[#617789] dark:text-gray-500 mt-1">cos φ</p>
+    </div>
+</div>
+
+<!-- Gauges Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <!-- Inductive Gauge Card -->
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 class="text-lg font-bold text-[#111518] dark:text-white">Endüktif Reaktif Oran</h3>
+                <p class="text-sm text-[#617789] dark:text-gray-400 mt-1">EPDK Limiti: %20</p>
+            </div>
+            {% set ind_ratio = reactive.inductive_ratio or 0 %}
+            {% if ind_ratio > 20 %}
+            <span
+                class="px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full text-sm font-semibold">CEZALİ</span>
+            {% elif ind_ratio > 18 %}
+            <span
+                class="px-3 py-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-sm font-semibold">RİSKLİ</span>
+            {% else %}
+            <span
+                class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-sm font-semibold">NORMAL</span>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center justify-center py-6">
+            <div id="indQualityGauge" class="w-[380px] h-[240px]"></div>
+        </div>
+
+        <div class="text-center">
+            <p
+                class="text-4xl font-extrabold {{ 'text-red-600' if ind_ratio > 20 else 'text-amber-600' if ind_ratio > 18 else 'text-green-600' }}">
+                %{{ "%.1f"|format(ind_ratio) }}</p>
+            <p class="text-sm text-[#617789] dark:text-gray-400 mt-2">
+                {% if ind_ratio > 20 %}
+                Limit aşıldı! Reaktif ceza uygulanacaktır.
+                {% elif ind_ratio > 18 %}
+                Dikkat! Limite yaklaşıyorsunuz.
+                {% else %}
+                Normal seviyede, ceza yok.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Capacitive Gauge Card -->
+    <div class="bg-white dark:bg-[#1a2634] rounded-xl border border-[#e5e7eb] dark:border-[#2a3644] p-6 shadow-sm">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 class="text-lg font-bold text-[#111518] dark:text-white">Kapasitif Reaktif Oran</h3>
+                <p class="text-sm text-[#617789] dark:text-gray-400 mt-1">EPDK Limiti: %15</p>
+            </div>
+            {% set cap_ratio = reactive.capacitive_ratio or 0 %}
+            {% if cap_ratio > 15 %}
+            <span
+                class="px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full text-sm font-semibold">CEZALİ</span>
+            {% elif cap_ratio > 12 %}
+            <span
+                class="px-3 py-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-sm font-semibold">RİSKLİ</span>
+            {% else %}
+            <span
+                class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-sm font-semibold">NORMAL</span>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center justify-center py-6">
+            <div id="capQualityGauge" class="w-[380px] h-[240px]"></div>
+        </div>
+
+        <div class="text-center">
+            <p
+                class="text-4xl font-extrabold {{ 'text-red-600' if cap_ratio > 15 else 'text-amber-600' if cap_ratio > 12 else 'text-green-600' }}">
+                %{{ "%.1f"|format(cap_ratio) }}</p>
+            <p class="text-sm text-[#617789] dark:text-gray-400 mt-2">
+                {% if cap_ratio > 15 %}
+                Limit aşıldı! Reaktif ceza uygulanacaktır.
+                {% elif cap_ratio > 12 %}
+                Dikkat! Limite yaklaşıyorsunuz.
+                {% else %}
+                Normal seviyede, ceza yok.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Info Panel -->
+<div
+    class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6">
+    <div class="flex items-start gap-4">
+        <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-600 shrink-0">
+            <span class="material-symbols-outlined text-2xl">info</span>
+        </div>
+        <div>
+            <h4 class="font-bold text-blue-900 dark:text-blue-100 mb-2">Reaktif Enerji Cezası Hakkında</h4>
+            <p class="text-blue-800 dark:text-blue-200 text-sm leading-relaxed">
+                EPDK düzenlemelerine göre, endüktif reaktif enerjinin aktif enerjiye oranı %20'yi, kapasitif reaktif
+                enerjinin aktif enerjiye oranı ise %15'i aşarsa ceza uygulanır.
+                Kompanzasyon sisteminizi düzenli olarak kontrol etmenizi öneririz.
+            </p>
+            <div class="mt-4 flex gap-3">
+                <button
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                    Detaylı Rapor
+                </button>
+                <button
+                    class="px-4 py-2 bg-white hover:bg-blue-50 text-blue-600 text-sm font-semibold rounded-lg border border-blue-200 transition-colors">
+                    Destek Al
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    google.charts.load( 'current', { packages: ['gauge'] } );
+    google.charts.setOnLoadCallback( drawQualityGauges );
+
+    function drawQualityGauges() {
+        const indValue = {{ ( reactive.inductive_ratio or 0) | round( 1 )
+    }};
+    const capValue = {{ ( reactive.capacitive_ratio or 0) | round( 1 ) }};
+
+    const indData = google.visualization.arrayToDataTable( [
+        ['Label', 'Value'],
+        ['Endüktif', indValue]
+    ] );
+
+    const capData = google.visualization.arrayToDataTable( [
+        ['Label', 'Value'],
+        ['Kapasitif', capValue]
+    ] );
+
+    const indOptions = {
+        width: 360,
+        height: 220,
+        min: 0,
+        max: 30,
+        redFrom: 20,
+        redTo: 30,
+        yellowFrom: 18,
+        yellowTo: 20,
+        minorTicks: 5
+    };
+
+    const capOptions = {
+        width: 360,
+        height: 220,
+        min: 0,
+        max: 25,
+        redFrom: 15,
+        redTo: 25,
+        yellowFrom: 12,
+        yellowTo: 15,
+        minorTicks: 5
+    };
+
+    new google.visualization.Gauge( document.getElementById( 'indQualityGauge' ) ).draw( indData, indOptions );
+    new google.visualization.Gauge( document.getElementById( 'capQualityGauge' ) ).draw( capData, capOptions );
+    }
+</script>
+{% endblock %}
