@@ -35,6 +35,38 @@ def create_app(config_name=None):
             'app_version': app.config['APP_VERSION']
         }
     
+    # Health check endpoint (for Coolify/Docker)
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint for monitoring"""
+        from services.database import get_db_connection
+        
+        health_status = {
+            'status': 'healthy',
+            'app': 'EFYS',
+            'version': app.config['APP_VERSION'],
+            'database': 'unknown'
+        }
+        
+        # Check database connection
+        try:
+            conn = get_db_connection()
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                cursor.close()
+                conn.close()
+                health_status['database'] = 'connected'
+            else:
+                health_status['database'] = 'disconnected'
+                health_status['status'] = 'unhealthy'
+        except Exception as e:
+            health_status['database'] = f'error: {str(e)}'
+            health_status['status'] = 'unhealthy'
+        
+        status_code = 200 if health_status['status'] == 'healthy' else 503
+        return health_status, status_code
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found(e):

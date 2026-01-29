@@ -1,0 +1,74 @@
+# Coolify Optimized Dockerfile
+# Multi-stage build for minimal image size
+
+# ========================================
+# Stage 1: Builder
+# ========================================
+FROM python:3.10-slim as builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# ========================================
+# Stage 2: Production
+# ========================================
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -u 1000 efys && \
+    mkdir -p /app/uploads /app/logs && \
+    chown -R efys:efys /app
+
+# Copy Python packages from builder
+COPY --from=builder /root/.local /home/efys/.local
+
+# Copy application code
+COPY --chown=efys:efys app.py .
+COPY --chown=efys:efys config.py .
+COPY --chown=efys:efys gunicorn.conf.py .
+COPY --chown=efys:efys requirements.txt .
+COPY --chown=efys:efys routes/ ./routes/
+COPY --chown=efys:efys services/ ./services/
+COPY --chown=efys:efys templates/ ./templates/
+COPY --chown=efys:efys static/ ./static/
+
+# Set environment
+ENV PATH=/home/efys/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    FLASK_APP=app.py \
+    FLASK_ENV=production
+
+# Switch to non-root user
+USER efys
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start application
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "app:app"]

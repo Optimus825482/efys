@@ -1,0 +1,66 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+*.sqlite
+*.db
+uploads/*
+logs/*
+.env
+.env.local
+.env.*.local
+
+# Documentation
+*.md
+!README.md
+DOCS/
+design-system/
+
+# Docker
+docker-compose.yml
+Dockerfile
+Dockerfile.coolify
+.dockerignore
+
+# Scripts
+scripts/
+backup.sh
+deploy.sh
+docker-backup.sh
+docker-deploy.sh
+
+# Tests
+test_*.py
+check_*.py
+
+# Database
+database/
+
+# Cache
+.ruff_cache/
+.pytest_cache/
