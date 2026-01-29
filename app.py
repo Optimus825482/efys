@@ -39,7 +39,7 @@ def create_app(config_name=None):
     @app.route('/health')
     def health_check():
         """Health check endpoint for monitoring"""
-        from services.database import get_db_connection
+        import psycopg2
         
         health_status = {
             'status': 'healthy',
@@ -50,16 +50,13 @@ def create_app(config_name=None):
         
         # Check database connection
         try:
-            conn = get_db_connection()
-            if conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT 1")
-                cursor.close()
-                conn.close()
-                health_status['database'] = 'connected'
-            else:
-                health_status['database'] = 'disconnected'
-                health_status['status'] = 'unhealthy'
+            DATABASE_URL = app.config['SQLALCHEMY_DATABASE_URI']
+            conn = psycopg2.connect(DATABASE_URL)
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            cursor.close()
+            conn.close()
+            health_status['database'] = 'connected'
         except Exception as e:
             health_status['database'] = f'error: {str(e)}'
             health_status['status'] = 'unhealthy'
